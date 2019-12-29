@@ -1,9 +1,9 @@
 package xox
 
-import zio.{Managed, Task}
+import zio.{Task, TaskManaged}
 
 package object server {
-  type MStream[A] = Stream[Managed[Throwable, A]]
+  type MStream[A] = Stream[TaskManaged[A]]
 
   type Stream[+A] = fs2.Stream[Task, A]
 }

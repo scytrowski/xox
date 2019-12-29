@@ -5,7 +5,7 @@ import fs2.io.tcp.{Socket, SocketGroup}
 import xox.server._
 import xox.server.config.ServerConfig
 import zio.interop.catz._
-import zio.{Managed, Runtime, Task, UIO}
+import zio.{Runtime, Task, TaskManaged, UIO}
 
 abstract class Server {
   type SClient <: Client
@@ -23,7 +23,7 @@ final class TcpServer private(socketStream: MStream[Socket[Task]],
 
 object TcpServer {
   def managed(config: ServerConfig,
-              clientGen: Socket[Task] => UIO[TcpClient])(implicit rt: Runtime[Any]): Managed[Throwable, TcpServer] =
+              clientGen: Socket[Task] => UIO[TcpClient])(implicit rt: Runtime[Any]): TaskManaged[TcpServer] =
     for {
       blocker     <- Blocker[Task].toManaged
       socketGroup <- SocketGroup[Task](blocker).toManaged

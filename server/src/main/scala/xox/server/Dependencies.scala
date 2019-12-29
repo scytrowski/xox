@@ -15,7 +15,7 @@ object Dependencies {
     val idGenerator = new UUIDIdGenerator
     val serverCommandDecoder = new ScodecServerCommandDecoder
     val clientCommandEncoder = new ScodecClientCommandEncoder
-    Config.load.map { config =>
+    Config.load().map { config =>
       Dependencies(
         config,
         idGenerator,

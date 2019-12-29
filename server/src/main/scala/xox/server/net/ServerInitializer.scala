@@ -2,10 +2,10 @@ package xox.server.net
 
 import fs2.io.tcp.Socket
 import xox.server.Dependencies
-import zio.{Managed, Task, UIO, Runtime}
+import zio.{Runtime, Task, TaskManaged, UIO}
 
 object ServerInitializer {
-  def initialize(dependencies: Dependencies)(implicit rt: Runtime[Any]): Managed[Throwable, Server] = {
+  def initialize(dependencies: Dependencies)(implicit rt: Runtime[Any]): TaskManaged[Server] = {
     val clientGen = clientGenerator(dependencies)
     TcpServer.managed(dependencies.config.server, clientGen)
   }
