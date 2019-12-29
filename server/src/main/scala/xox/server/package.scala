@@ -1,10 +1,9 @@
 package xox
 
-import cats.effect.Resource
-import zio.Task
+import zio.{Managed, Task}
 
 package object server {
-  type RStream[A] = Stream[Resource[Task, A]]
+  type MStream[A] = Stream[Managed[Throwable, A]]
 
   type Stream[+A] = fs2.Stream[Task, A]
 }
