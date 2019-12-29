@@ -13,6 +13,9 @@ lazy val core = (project in file("core"))
 lazy val server = (project in file("server"))
   .dependsOn(core)
   .settings(
+    scalacOptions += "-Ypartial-unification"
+  )
+  .settings(
     // https://mvnrepository.com/artifact/org.typelevel/cats-core
     libraryDependencies += "org.typelevel" %% "cats-core" % "2.1.0",
     // https://mvnrepository.com/artifact/org.typelevel/cats-effect
@@ -36,5 +39,11 @@ lazy val server = (project in file("server"))
     // https://mvnrepository.com/artifact/io.circe/circe-config
     libraryDependencies += "io.circe" %% "circe-config" % "0.7.0",
     // https://mvnrepository.com/artifact/io.circe/circe-generic
-    libraryDependencies += "io.circe" %% "circe-generic" % "0.12.3"
+    libraryDependencies += "io.circe" %% "circe-generic" % "0.12.3",
+    // https://mvnrepository.com/artifact/io.chrisdavenport/log4cats-core
+    libraryDependencies += "io.chrisdavenport" %% "log4cats-core" % "1.0.1",
+    // https://mvnrepository.com/artifact/io.chrisdavenport/log4cats-slf4j
+    libraryDependencies += "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
   )

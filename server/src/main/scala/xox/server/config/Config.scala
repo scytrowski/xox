@@ -1,11 +1,15 @@
 package xox.server.config
 
 import java.net.{InetAddress, InetSocketAddress}
+
 import cats.syntax.either._
 import com.typesafe.config.{ConfigFactory, Config => TSConfig}
+import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import io.circe.Decoder
 import io.circe.config.syntax._
 import zio.Task
+import zio.interop.catz._
 
 import scala.util.Try
 
@@ -16,9 +20,13 @@ object Config {
   import io.circe.generic.auto._
 
   def load(tsConfig: TSConfig = ConfigFactory.load()): Task[Config] =
-    Task.fromEither {
-      tsConfig.as[Config]("xox")
-    }
+    Task.fromEither(tsConfig.as[Config]("xox"))
+      .tapBoth(
+        error => logger.error(error)("Failed to load config"),
+        _ => logger.debug("Config has been loaded")
+      )
+
+  private val logger = Slf4jLogger.getLogger[Task]
 }
 
 private object ConfigDecoders {
