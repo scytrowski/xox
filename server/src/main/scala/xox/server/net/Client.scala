@@ -1,43 +1,47 @@
 package xox.server.net
 
-import cats.data.OptionT
-import fs2.Chunk
+import cats.effect.Concurrent
+import cats.syntax.functor._
+import fs2.concurrent.{Enqueue, Queue}
 import fs2.io.tcp.Socket
-import scodec.bits.BitVector
-import xox.core.protocol.{ClientCommand, ServerCommand}
-import xox.server._
-import xox.server.codecs.{ClientCommandEncoder, ServerCommandDecoder}
-import zio.Task
-import zio.interop.catz._
+import scodec.stream.{StreamDecoder, StreamEncoder}
+import scodec.{Decoder, Encoder}
+import xox.core.codecs.{ClientCommandCodec, ServerCommandCodec}
 
-abstract class Client {
-  def id: String
-
-  def incoming: Stream[ServerCommand]
-
-  def send(command: ClientCommand): Task[Unit]
+object GameClient {
+  def create[F[_]: Concurrent](clientId: String, socket: Socket[F]): F[GameClient[F]] =
+    Client.create(clientId, socket, ServerCommandCodec.decoder, ClientCommandCodec.encoder)
 }
 
-final class TcpClient(override val id: String,
-                      socket: Socket[Task],
-                      decoder: ServerCommandDecoder,
-                      encoder: ClientCommandEncoder) extends Client {
-  override def incoming: Stream[ServerCommand] =
-    fs2.Stream.repeatEval(read)
-      .takeWhile(_.isDefined)
-      .collect { case Some(bits) => bits }
-      .flatMap(decoder.decode)
+trait Client[F[_], I, O] {
+  def id: String
 
-  override def send(command: ClientCommand): Task[Unit] =
-    for {
-      bits <- encoder.encode(command)
-      _    <- socket.write(Chunk.byteVector(bits.toByteVector))
-    } yield ()
+  def incoming: fs2.Stream[F, I]
 
-  private def read: Task[Option[BitVector]] =
-    OptionT(socket.read(bufferSize))
-      .map(_.toBitVector)
-      .value
+  def outgoing: Enqueue[F, O]
+}
 
-  private val bufferSize = 1024
+object Client {
+  def create[F[_]: Concurrent, I, O](clientId: String,
+                                     socket: Socket[F],
+                                     decoder: Decoder[I],
+                                     encoder: Encoder[O]): F[Client[F, I, O]] =
+    // fixme: Consider queue bound
+    Queue.unbounded[F, O].map { queue =>
+      new Client[F, I, O] {
+        private val writeOutgoing =
+          queue.dequeue
+            .through(StreamEncoder.many(encoder).toPipeByte)
+            .through(socket.writes())
+
+        final override val id: String = clientId
+
+        final override val incoming: fs2.Stream[F, I] =
+          socket.reads(1024)
+            .through(StreamDecoder.many(decoder).toPipeByte)
+            .concurrently(writeOutgoing)
+
+        final override val outgoing: Enqueue[F, O] = queue
+      }
+    }
 }

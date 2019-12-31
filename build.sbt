@@ -32,8 +32,10 @@ lazy val server = (project in file("server"))
     libraryDependencies += "co.fs2" %% "fs2-io" % "2.1.0",
     // https://mvnrepository.com/artifact/org.scodec/scodec-core
     libraryDependencies += "org.scodec" %% "scodec-core" % "1.11.4",
-      // https://mvnrepository.com/artifact/org.scodec/scodec-bits
+    // https://mvnrepository.com/artifact/org.scodec/scodec-bits
     libraryDependencies += "org.scodec" %% "scodec-bits" % "1.1.12",
+    // https://mvnrepository.com/artifact/org.scodec/scodec-stream
+    libraryDependencies += "org.scodec" %% "scodec-stream" % "2.0.0",
     // https://mvnrepository.com/artifact/com.typesafe/config
     libraryDependencies += "com.typesafe" % "config" % "1.4.0",
     // https://mvnrepository.com/artifact/io.circe/circe-config

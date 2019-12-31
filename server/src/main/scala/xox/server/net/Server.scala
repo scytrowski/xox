@@ -1,31 +1,34 @@
 package xox.server.net
 
-import cats.effect.Blocker
+import java.net.InetSocketAddress
+
+import cats.effect.{Blocker, Concurrent, ContextShift, Resource}
 import fs2.io.tcp.{Socket, SocketGroup}
-import xox.server._
 import xox.server.config.ServerConfig
-import zio.interop.catz._
-import zio.{Runtime, Task, TaskManaged, UIO}
+import xox.server.util.IdGenerator
 
-abstract class Server {
-  type SClient <: Client
-
-  def clients: MStream[SClient]
+object GameServer {
+  def resource[F[_]: Concurrent: ContextShift](config: ServerConfig): Resource[F, GameServer[F]] =
+    Blocker[F].flatMap { blocker =>
+      Server.resource(config.address, blocker, GameClient.create[F])
+    }
 }
 
-final class TcpServer private(socketStream: MStream[Socket[Task]],
-                              clientGen: Socket[Task] => UIO[TcpClient]) extends Server {
-  override type SClient = TcpClient
-
-  override def clients: MStream[TcpClient] =
-    socketStream.map(_.mapM(clientGen))
+trait Server[F[_], I, O] {
+  def connections: fs2.Stream[F, Client[F, I, O]]
 }
 
-object TcpServer {
-  def managed(config: ServerConfig,
-              clientGen: Socket[Task] => UIO[TcpClient])(implicit rt: Runtime[Any]): TaskManaged[TcpServer] =
-    for {
-      blocker     <- Blocker[Task].toManaged
-      socketGroup <- SocketGroup[Task](blocker).toManaged
-    } yield new TcpServer(socketGroup.server[Task](config.address).map(_.toManaged), clientGen)
+object Server {
+  def resource[F[_]: Concurrent: ContextShift, I, O](address: InetSocketAddress,
+                                                     blocker: Blocker,
+                                                     clientGen: (String, Socket[F]) => F[Client[F, I, O]]): Resource[F, Server[F, I, O]] =
+    SocketGroup(blocker).map { socketGroup =>
+      new Server[F, I, O] {
+        final override val connections: fs2.Stream[F, Client[F, I, O]] =
+          socketGroup.server(address)
+            .flatMap(fs2.Stream.resource)
+            .zip(IdGenerator.stream)
+            .evalMap { case (socket, id) => clientGen(id, socket) }
+      }
+    }
 }
