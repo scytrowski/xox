@@ -2,7 +2,6 @@ package xox.server.config
 
 import java.net.{InetAddress, InetSocketAddress}
 
-import cats.ApplicativeError
 import cats.syntax.either._
 import com.typesafe.config.{ConfigFactory, Config => TSConfig}
 import io.circe.Decoder
@@ -16,8 +15,8 @@ object Config {
   import ConfigDecoders._
   import io.circe.generic.auto._
 
-  def load[F[_]](tsConfig: TSConfig = ConfigFactory.load())(implicit F: ApplicativeError[F, Throwable]): F[Config] =
-    F.fromEither(tsConfig.as[Config]("xox"))
+  def load(tsConfig: TSConfig = ConfigFactory.load()): Try[Config] =
+    tsConfig.as[Config]("xox").toTry
 }
 
 private object ConfigDecoders {
