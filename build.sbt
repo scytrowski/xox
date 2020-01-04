@@ -26,5 +26,9 @@ lazy val server = (project in file("server"))
     // https://mvnrepository.com/artifact/io.circe/circe-config
     libraryDependencies += "io.circe" %% "circe-config" % "0.7.0",
     // https://mvnrepository.com/artifact/io.circe/circe-generic
-    libraryDependencies += "io.circe" %% "circe-generic" % "0.12.3"
+    libraryDependencies += "io.circe" %% "circe-generic" % "0.12.3",
+    // https://mvnrepository.com/artifact/org.scalatest/scalatest
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0-M2" % Test,
+    // https://mvnrepository.com/artifact/com.typesafe.akka/akka-testkit
+    libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.6.1" % Test
   )

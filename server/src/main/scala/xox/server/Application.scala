@@ -3,6 +3,7 @@ package xox.server
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
+import akka.io.{IO, Tcp}
 import xox.server.config.Config
 import xox.server.handler.{ClientHandlerActor, CommandHandlerActor}
 import xox.server.handler.ClientHandlerActor.CommandHandlerFactory
@@ -15,8 +16,8 @@ import scala.util.{Failure, Success}
 
 object Application extends App {
   implicit val ec: ExecutionContext = ExecutionContext.global
-  val system = ActorSystem()
-  val address = new InetSocketAddress("127.0.0.1", 6500)
+  implicit val system: ActorSystem = ActorSystem()
+  val tcp = IO(Tcp)
 
   Config.load() match {
     case Success(config) =>
@@ -24,7 +25,7 @@ object Application extends App {
       val commandHandlerFactory: CommandHandlerFactory = refFactory => clientHandler => refFactory.actorOf(CommandHandlerActor.props)
       val clientHandler = system.actorOf(ClientHandlerActor.props(commandHandlerFactory), "client-handler")
       val clientFactory: ClientFactory = refFactory => (id, connection) => refFactory.actorOf(ClientActor.props(id, connection, clientHandler), s"client-$id")
-      system.actorOf(ServerActor.props(config.server, idGenerator, clientFactory), "server")
+      system.actorOf(ServerActor.props(config.server, idGenerator, tcp, clientFactory), "server")
     case Failure(ex) =>
       system.log.error(ex, "Unable to load configuration")
   }

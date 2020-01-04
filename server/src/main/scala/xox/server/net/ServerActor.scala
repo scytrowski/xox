@@ -1,20 +1,16 @@
 package xox.server.net
 
-import java.net.InetSocketAddress
-
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorRefFactory, Props}
-import akka.io.Tcp.{Bind, Bound, CommandFailed, Connected, Register}
-import akka.io.{IO, Tcp}
+import akka.io.Tcp._
 import xox.server.config.ServerConfig
 import xox.server.net.ServerActor.ClientFactory
 import xox.server.util.IdGenerator
 
 final class ServerActor private(config: ServerConfig,
                                 idGenerator: IdGenerator,
+                                tcp: ActorRef,
                                 clientFactory: ClientFactory) extends Actor with ActorLogging {
-  import context.system
-
-  IO(Tcp) ! Bind(self, config.address)
+  tcp ! Bind(self, config.address)
 
   override val receive: Receive = awaitBound
 
@@ -40,6 +36,6 @@ final class ServerActor private(config: ServerConfig,
 object ServerActor {
   type ClientFactory = ActorRefFactory => (String, ActorRef) => ActorRef
 
-  def props(config: ServerConfig, idGenerator: IdGenerator, clientFactory: ClientFactory): Props =
-    Props(new ServerActor(config, idGenerator, clientFactory))
+  def props(config: ServerConfig, idGenerator: IdGenerator, tcp: ActorRef, clientFactory: ClientFactory): Props =
+    Props(new ServerActor(config, idGenerator, tcp, clientFactory))
 }

@@ -1,9 +1,7 @@
 package xox.core.protocol
 
-sealed abstract class ServerCommand {
-  def clientId: String
-}
+sealed abstract class ServerCommand
 
 object ServerCommand {
-  final case class Login(clientId: String, nick: String) extends ServerCommand
+  final case class Login(nick: String) extends ServerCommand
 }
