@@ -10,7 +10,7 @@ import xox.core.protocol.ClientCommand.LoginOk
 import xox.core.protocol.ServerCommand.Login
 import xox.core.protocol.{ClientCommand, ServerCommand}
 import xox.server.ActorSpec
-import xox.server.handler.ClientHandlerActor.{ReceivedCommand, Register, Unregister}
+import xox.server.handler.ClientManagerActor.{ReceivedCommand, Register, Unregister}
 
 class ClientActorTest extends ActorSpec("ClientActorTest") with EitherValues {
   "ClientActor" should {

@@ -5,8 +5,8 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import akka.io.{IO, Tcp}
 import xox.server.config.Config
-import xox.server.handler.{ClientHandlerActor, CommandHandlerActor}
-import xox.server.handler.ClientHandlerActor.CommandHandlerFactory
+import xox.server.handler.{ClientManagerActor, CommandHandlerActor}
+import xox.server.handler.ClientManagerActor.CommandHandlerFactory
 import xox.server.net.{ClientActor, ServerActor}
 import xox.server.net.ServerActor.ClientFactory
 import xox.server.util.UuidIdGenerator
@@ -23,7 +23,7 @@ object Application extends App {
     case Success(config) =>
       val idGenerator = UuidIdGenerator
       val commandHandlerFactory: CommandHandlerFactory = refFactory => clientHandler => refFactory.actorOf(CommandHandlerActor.props)
-      val clientHandler = system.actorOf(ClientHandlerActor.props(commandHandlerFactory), "client-handler")
+      val clientHandler = system.actorOf(ClientManagerActor.props(commandHandlerFactory), "client-handler")
       val clientFactory: ClientFactory = refFactory => (id, connection) => refFactory.actorOf(ClientActor.props(id, connection, clientHandler), s"client-$id")
       system.actorOf(ServerActor.props(config.server, idGenerator, tcp, clientFactory), "server")
     case Failure(ex) =>

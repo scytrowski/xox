@@ -2,10 +2,10 @@ package xox.server.handler
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorRefFactory, Props}
 import xox.core.protocol.{ClientCommand, ServerCommand}
-import xox.server.handler.ClientHandlerActor.{CommandHandlerFactory, ReceivedCommand, Register, SendCommand, Unregister}
+import xox.server.handler.ClientManagerActor.{CommandHandlerFactory, ReceivedCommand, Register, SendCommand, Unregister}
 import xox.server.handler.CommandHandlerActor.HandleCommand
 
-final class ClientHandlerActor private(commandHandlerFactory: CommandHandlerFactory) extends Actor with ActorLogging {
+final class ClientManagerActor private(commandHandlerFactory: CommandHandlerFactory) extends Actor with ActorLogging {
   override def receive: Receive = handleClients(Map.empty)
 
   private def handleClients(clients: Map[String, ActorRef]): Receive = {
@@ -49,7 +49,7 @@ final class ClientHandlerActor private(commandHandlerFactory: CommandHandlerFact
   }
 }
 
-object ClientHandlerActor {
+object ClientManagerActor {
   type CommandHandlerFactory = ActorRefFactory => ActorRef => ActorRef
 
   final case class Register(clientId: String, clientRef: ActorRef)
@@ -61,5 +61,5 @@ object ClientHandlerActor {
   final case class SendCommand(clientId: String, command: ClientCommand)
 
   def props(commandHandlerFactory: CommandHandlerFactory): Props =
-    Props(new ClientHandlerActor(commandHandlerFactory))
+    Props(new ClientManagerActor(commandHandlerFactory))
 }

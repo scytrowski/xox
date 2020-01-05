@@ -12,7 +12,7 @@ import xox.server.ActorSpec
 import xox.server.config.ServerConfig
 import xox.server.fixture.TestTcpClientActor
 import xox.server.fixture.TestTcpClientActor.{Connected, Send}
-import xox.server.handler.ClientHandlerActor.{ReceivedCommand, Register}
+import xox.server.handler.ClientManagerActor.{ReceivedCommand, Register}
 import xox.server.net.ServerActor.ClientFactory
 import xox.server.util.IdGenerator
 

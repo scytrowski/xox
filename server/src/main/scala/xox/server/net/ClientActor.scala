@@ -8,12 +8,12 @@ import scodec.bits.BitVector
 import scodec.stream.StreamDecoder
 import xox.core.codecs.{ClientCommandCodec, ServerCommandCodec}
 import xox.core.protocol.{ClientCommand, ServerCommand}
-import xox.server.handler.ClientHandlerActor.{ReceivedCommand, Register, Unregister}
+import xox.server.handler.ClientManagerActor.{ReceivedCommand, Register, Unregister}
 
 final class ClientActor private(id: String,
                                 connection: ActorRef,
-                                clientHandler: ActorRef) extends Actor with ActorLogging {
-  clientHandler ! Register(id, self)
+                                clientManager: ActorRef) extends Actor with ActorLogging {
+  clientManager ! Register(id, self)
 
   override val receive: Receive = {
     case Received(data) =>
@@ -21,7 +21,7 @@ final class ClientActor private(id: String,
         case Right(commands) =>
           commands.foreach { command =>
             log.debug(s"Received $command command from client $id")
-            clientHandler ! ReceivedCommand(id, command)
+            clientManager ! ReceivedCommand(id, command)
           }
         case Left(error)     =>
           // fixme: Handle errors
@@ -37,7 +37,7 @@ final class ClientActor private(id: String,
       }
     case PeerClosed =>
       log.info(s"Client $id has closed the connection")
-      clientHandler ! Unregister(id)
+      clientManager ! Unregister(id)
   }
 
   private def decodeCommands(data: ByteString): Either[Err, Seq[ServerCommand]] = {
