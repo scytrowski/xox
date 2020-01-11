@@ -1,11 +1,11 @@
 package xox.server.handler
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorRefFactory, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import xox.core.protocol.{ClientCommand, ServerCommand}
-import xox.server.handler.ClientManagerActor.{CommandHandlerFactory, ReceivedCommand, Register, SendCommand, Unregister}
-import xox.server.handler.CommandHandlerActor.HandleCommand
+import xox.server.handler.ClientManagerActor.{ReceivedCommand, Register, SendCommand, Unregister}
+import xox.server.handler.CommandManagerActor.HandleCommand
 
-final class ClientManagerActor private(commandHandlerFactory: CommandHandlerFactory) extends Actor with ActorLogging {
+final class ClientManagerActor private(commandManager: ActorRef) extends Actor with ActorLogging {
   override def receive: Receive = handleClients(Map.empty)
 
   private def handleClients(clients: Map[String, ActorRef]): Receive = {
@@ -31,8 +31,8 @@ final class ClientManagerActor private(commandHandlerFactory: CommandHandlerFact
       clients.get(clientId) match {
         case Some(_) =>
           log.debug(s"Going to handle $command command received from client $clientId")
-          val commandHandler = commandHandlerFactory(context)(self)
-          commandHandler ! HandleCommand(clientId, command)
+          val request = CommandRequest(clientId, command, self)
+          commandManager ! HandleCommand(request)
         case None    =>
           // fixme: Handle error
           log.warning(s"Received $command command from unknown client $clientId")
@@ -50,7 +50,8 @@ final class ClientManagerActor private(commandHandlerFactory: CommandHandlerFact
 }
 
 object ClientManagerActor {
-  type CommandHandlerFactory = ActorRefFactory => ActorRef => ActorRef
+  def props(commandManager: ActorRef): Props =
+    Props(new ClientManagerActor(commandManager))
 
   final case class Register(clientId: String, clientRef: ActorRef)
 
@@ -59,7 +60,4 @@ object ClientManagerActor {
   final case class ReceivedCommand(clientId: String, command: ServerCommand)
 
   final case class SendCommand(clientId: String, command: ClientCommand)
-
-  def props(commandHandlerFactory: CommandHandlerFactory): Props =
-    Props(new ClientManagerActor(commandHandlerFactory))
 }

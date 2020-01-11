@@ -9,7 +9,8 @@ import io.circe.config.syntax._
 
 import scala.util.Try
 
-final case class Config(server: ServerConfig)
+final case class Config(server: ServerConfig,
+                        handler: HandlerConfig)
 
 object Config {
   import ConfigDecoders._

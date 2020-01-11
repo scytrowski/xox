@@ -1,14 +1,11 @@
 package xox.server
 
-import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import akka.io.{IO, Tcp}
 import xox.server.config.Config
-import xox.server.handler.{ClientManagerActor, CommandHandlerActor}
-import xox.server.handler.ClientManagerActor.CommandHandlerFactory
-import xox.server.net.{ClientActor, ServerActor}
+import xox.server.handler.{ClientManagerActor, CommandManagerActor}
 import xox.server.net.ServerActor.ClientFactory
+import xox.server.net.{ClientActor, ServerActor}
 import xox.server.util.UuidIdGenerator
 
 import scala.concurrent.ExecutionContext
@@ -22,8 +19,8 @@ object Application extends App {
   Config.load() match {
     case Success(config) =>
       val idGenerator = UuidIdGenerator
-      val commandHandlerFactory: CommandHandlerFactory = refFactory => clientHandler => refFactory.actorOf(CommandHandlerActor.props)
-      val clientHandler = system.actorOf(ClientManagerActor.props(commandHandlerFactory), "client-handler")
+      val commandManager = system.actorOf(CommandManagerActor.props(config.handler, idGenerator, ???))
+      val clientHandler = system.actorOf(ClientManagerActor.props(commandManager), "client-handler")
       val clientFactory: ClientFactory = refFactory => (id, connection) => refFactory.actorOf(ClientActor.props(id, connection, clientHandler), s"client-$id")
       system.actorOf(ServerActor.props(config.server, idGenerator, tcp, clientFactory), "server")
     case Failure(ex) =>
