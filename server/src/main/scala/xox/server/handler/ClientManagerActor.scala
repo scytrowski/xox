@@ -2,10 +2,12 @@ package xox.server.handler
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import xox.core.protocol.{ClientCommand, ServerCommand}
+import xox.server.game.PlayerManagerActor.LogoutAll
 import xox.server.handler.ClientManagerActor.{ReceivedCommand, Register, SendCommand, Unregister}
 import xox.server.handler.CommandManagerActor.HandleCommand
 
-final class ClientManagerActor private(commandManager: ActorRef) extends Actor with ActorLogging {
+final class ClientManagerActor private(commandManager: ActorRef,
+                                       playerManager: ActorRef) extends Actor with ActorLogging {
   override def receive: Receive = handleClients(Map.empty)
 
   private def handleClients(clients: Map[String, ActorRef]): Receive = {
@@ -22,6 +24,7 @@ final class ClientManagerActor private(commandManager: ActorRef) extends Actor w
       clients.get(clientId) match {
         case Some(_) =>
           log.debug(s"Unregistered client $clientId")
+          playerManager ! LogoutAll(clientId)
           context become handleClients(clients - clientId)
         case None    =>
           // fixme: Handle error
@@ -50,8 +53,8 @@ final class ClientManagerActor private(commandManager: ActorRef) extends Actor w
 }
 
 object ClientManagerActor {
-  def props(commandManager: ActorRef): Props =
-    Props(new ClientManagerActor(commandManager))
+  def props(commandManager: ActorRef, playerManager: ActorRef): Props =
+    Props(new ClientManagerActor(commandManager, playerManager))
 
   final case class Register(clientId: String, clientRef: ActorRef)
 
