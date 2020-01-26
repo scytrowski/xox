@@ -1,18 +1,19 @@
 package xox.server.game
 
 import akka.actor.{Actor, ActorLogging, Props}
-import xox.server.game.MatchManagerActor.{CreateMatch, CreateMatchResponse, CreateMatchResult, Get, GetResponse, JoinMatch, JoinMatchResponse, JoinMatchResult}
+import xox.core.game.{Mark, MatchParameters}
+import xox.server.game.MatchManagerActor._
 import xox.server.util.IdGenerator
 
 final class MatchManagerActor private(idGenerator: IdGenerator) extends Actor with ActorLogging {
   override val receive: Receive = handleMatches(Map.empty)
 
   private def handleMatches(matches: Map[String, Match]): Receive = {
-    case CreateMatch(ownerId) =>
+    case CreateMatch(ownerId, parameters) =>
       matches.values.find(_.isInvolved(ownerId)) match {
         case None    =>
           val matchId = idGenerator.generate
-          val newMatch = Match.WaitingForOpponent(matchId, ownerId)
+          val newMatch = Match.WaitingForOpponent(matchId, ownerId, parameters)
           log.debug(s"Created match $matchId owned by player $ownerId")
           sender() ! CreateMatchResponse(CreateMatchResult.Ok(matchId))
           context become handleMatches(matches + (matchId -> newMatch))
@@ -27,7 +28,7 @@ final class MatchManagerActor private(idGenerator: IdGenerator) extends Actor wi
         case (None, Some(m: Match.WaitingForOpponent)) =>
           val ongoingMatch = m.start(playerId)
           log.debug(s"Player $playerId has joined the match ${ongoingMatch.id}")
-          sender() ! JoinMatchResponse(JoinMatchResult.Ok(ongoingMatch.ownerId))
+          sender() ! JoinMatchResponse(JoinMatchResult.Ok(ongoingMatch.ownerId, ongoingMatch.state.ownerMark))
           context become handleMatches(matches + (ongoingMatch.id -> ongoingMatch))
         case (None, Some(m: Match.Ongoing)) =>
           log.warning(s"Player $playerId requested joining to already ongoing match ${m.id}")
@@ -48,7 +49,7 @@ final class MatchManagerActor private(idGenerator: IdGenerator) extends Actor wi
 object MatchManagerActor {
   def props(idGenerator: IdGenerator): Props = Props(new MatchManagerActor(idGenerator))
 
-  final case class CreateMatch(ownerId: String)
+  final case class CreateMatch(ownerId: String, parameters: MatchParameters)
   final case class CreateMatchResponse(result: CreateMatchResult)
   final case class JoinMatch(playerId: String, matchId: String)
   final case class JoinMatchResponse(result: JoinMatchResult)
@@ -65,7 +66,7 @@ object MatchManagerActor {
   sealed abstract class JoinMatchResult
 
   object JoinMatchResult {
-    final case class Ok(ownerId: String) extends JoinMatchResult
+    final case class Ok(ownerId: String, ownerMark: Mark) extends JoinMatchResult
     case object AlreadyOngoing extends JoinMatchResult
     final case class AlreadyInMatch(matchId: String) extends JoinMatchResult
     case object MatchNotExist extends JoinMatchResult

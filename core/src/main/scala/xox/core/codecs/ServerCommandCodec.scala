@@ -5,6 +5,7 @@ import xox.core.protocol.ServerCommand
 
 object ServerCommandCodec {
   import CommonCodecs._
+  import GameCodecs._
   import ServerCommand._
   import scodec.codecs._
 
@@ -33,7 +34,7 @@ object ServerCommandCodec {
     }
 
   private lazy val loginCodec = ascii.as[Login]
-  private lazy val createMatchCodec = ascii.as[CreateMatch]
+  private lazy val createMatchCodec = (ascii :: matchParametersCodec).as[CreateMatch]
   private lazy val joinMatchCodec = (ascii :: ascii).as[JoinMatch]
 
   private def commandCode(command: ServerCommand): Int =

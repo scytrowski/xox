@@ -2,11 +2,12 @@ package xox.server.handler
 
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import xox.core.game.{Mark, MatchParameters}
 import xox.core.protocol.{ClientCommand, ServerCommand}
 import xox.server.ActorSpec
-import xox.server.game.MatchManagerActor.{CreateMatch, CreateMatchResponse, CreateMatchResult, JoinMatch, JoinMatchResponse, JoinMatchResult}
+import xox.server.game.MatchManagerActor._
 import xox.server.game.PlayerManagerActor.{Login, LoginResponse, LoginResult}
-import xox.server.handler.ClientManagerActor.SendCommand
+import xox.server.handler.ClientManagerActor.{BroadcastCommand, SendCommand}
 import xox.server.handler.CommandManagerActor.HandleCommand
 
 class CommandHandlerActorTest extends ActorSpec("CommandHandlerTest") {
@@ -25,6 +26,7 @@ class CommandHandlerActorTest extends ActorSpec("CommandHandlerTest") {
         playerManager.expectMsg(Login("123", "abc"))
         commandHandler ! LoginResponse(LoginResult.Ok("456"))
         recipient.expectMsg(SendCommand("123", ClientCommand.LoginOk("456")))
+        recipient.expectMsg(BroadcastCommand(ClientCommand.PlayerLogged("456", "abc")))
       }
 
       "inform player is already logged in" in {
@@ -45,27 +47,30 @@ class CommandHandlerActorTest extends ActorSpec("CommandHandlerTest") {
     "CreateMatch" should {
 
       "inform match has been created successfully" in {
+        val parameters = MatchParameters(5)
         val recipient = TestProbe()
         val matchManager = TestProbe()
         val commandHandler = createHandler(matchManager = matchManager.ref)
 
-        val request = CommandRequest("123", ServerCommand.CreateMatch("456"), recipient.ref)
+        val request = CommandRequest("123", ServerCommand.CreateMatch("456", parameters), recipient.ref)
         commandHandler ! HandleCommand(request)
 
-        matchManager.expectMsg(CreateMatch("456"))
+        matchManager.expectMsg(CreateMatch("456", parameters))
         commandHandler ! CreateMatchResponse(CreateMatchResult.Ok("789"))
-        recipient.expectMsg(SendCommand("123", ClientCommand.CreateMatchOk("789")))
+        recipient.expectMsg(SendCommand("123", ClientCommand.CreateMatchOk("789", "456")))
+        recipient.expectMsg(BroadcastCommand(ClientCommand.MatchCreated("789", "456", parameters)))
       }
 
       "inform requesting player is already in some match" in {
+        val parameters = MatchParameters(5)
         val recipient = TestProbe()
         val matchManager = TestProbe()
         val commandHandler = createHandler(matchManager = matchManager.ref)
 
-        val request = CommandRequest("123", ServerCommand.CreateMatch("456"), recipient.ref)
+        val request = CommandRequest("123", ServerCommand.CreateMatch("456", parameters), recipient.ref)
         commandHandler ! HandleCommand(request)
 
-        matchManager.expectMsg(CreateMatch("456"))
+        matchManager.expectMsg(CreateMatch("456", parameters))
         commandHandler ! CreateMatchResponse(CreateMatchResult.AlreadyInMatch("789"))
         recipient.expectMsgPF() { case SendCommand("123", _: ClientCommand.Error) => }
       }
@@ -83,8 +88,9 @@ class CommandHandlerActorTest extends ActorSpec("CommandHandlerTest") {
         commandHandler ! HandleCommand(request)
 
         matchManager.expectMsg(JoinMatch("456", "789"))
-        commandHandler ! JoinMatchResponse(JoinMatchResult.Ok("abc"))
-        recipient.expectMsg(SendCommand("123", ClientCommand.JoinMatchOk("abc")))
+        commandHandler ! JoinMatchResponse(JoinMatchResult.Ok("abc", Mark.X))
+        recipient.expectMsg(SendCommand("123", ClientCommand.JoinMatchOk("789", "456", Mark.X)))
+        recipient.expectMsg(BroadcastCommand(ClientCommand.MatchStarted("789", "456", Mark.X)))
       }
 
       "inform requested match is already ongoing" in {

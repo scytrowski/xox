@@ -1,10 +1,11 @@
 package xox.server.handler
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import xox.core.game.MatchParameters
 import xox.core.protocol.{ClientCommand, ServerCommand}
-import xox.server.game.MatchManagerActor.{CreateMatch, CreateMatchResponse, CreateMatchResult, JoinMatch, JoinMatchResponse, JoinMatchResult}
+import xox.server.game.MatchManagerActor._
 import xox.server.game.PlayerManagerActor.{Login, LoginResponse, LoginResult}
-import xox.server.handler.ClientManagerActor.SendCommand
+import xox.server.handler.ClientManagerActor.{BroadcastCommand, SendCommand}
 import xox.server.handler.CommandManagerActor.HandleCommand
 
 final class CommandHandlerActor(playerManager: ActorRef,
@@ -16,9 +17,9 @@ final class CommandHandlerActor(playerManager: ActorRef,
         case ServerCommand.Login(nick) =>
           playerManager ! Login(request.clientId, nick)
           context become handleLogin(request, nick)
-        case ServerCommand.CreateMatch(playerId) =>
-          matchManager ! CreateMatch(playerId)
-          context become handleCreateMatch(request, playerId)
+        case ServerCommand.CreateMatch(playerId, parameters) =>
+          matchManager ! CreateMatch(playerId, parameters)
+          context become handleCreateMatch(request, playerId, parameters)
         case ServerCommand.JoinMatch(playerId, matchId) =>
           matchManager ! JoinMatch(playerId, matchId)
           context become handleJoinMatch(request, playerId, matchId)
@@ -31,6 +32,7 @@ final class CommandHandlerActor(playerManager: ActorRef,
         case LoginResult.Ok(playerId)  =>
           log.debug(s"Player $nick handled by client ${request.clientId} has been successfully logged in and associated with ID $playerId")
           sendCommand(request, ClientCommand.LoginOk(playerId))
+          broadcastCommand(request, ClientCommand.PlayerLogged(playerId, nick))
         case LoginResult.AlreadyLogged =>
           log.debug(s"Player $nick is already logged in")
           sendError(request, s"Player with nick $nick is already logged in")
@@ -38,12 +40,13 @@ final class CommandHandlerActor(playerManager: ActorRef,
       context stop self
   }
 
-  private def handleCreateMatch(request: CommandRequest, playerId: String): Receive = {
+  private def handleCreateMatch(request: CommandRequest, playerId: String, parameters: MatchParameters): Receive = {
     case CreateMatchResponse(result) =>
       result match {
         case CreateMatchResult.Ok(matchId) =>
           log.debug(s"Player with ID $playerId has successfully created a match with ID $matchId")
-          sendCommand(request, ClientCommand.CreateMatchOk(matchId))
+          sendCommand(request, ClientCommand.CreateMatchOk(matchId, playerId))
+          broadcastCommand(request, ClientCommand.MatchCreated(matchId, playerId, parameters))
         case CreateMatchResult.AlreadyInMatch(matchId) =>
           log.debug(s"Player with ID $playerId is already in the match with ID $matchId")
           sendError(request, s"Player with ID $playerId is already in the match with ID $matchId")
@@ -54,9 +57,10 @@ final class CommandHandlerActor(playerManager: ActorRef,
   private def handleJoinMatch(request: CommandRequest, playerId: String, matchId: String): Receive = {
     case JoinMatchResponse(result) =>
       result match {
-        case JoinMatchResult.Ok(ownerId) =>
+        case JoinMatchResult.Ok(ownerId, ownerMark) =>
           log.debug(s"Player with ID $playerId has successfully joined the match with ID $matchId")
-          sendCommand(request, ClientCommand.JoinMatchOk(ownerId))
+          sendCommand(request, ClientCommand.JoinMatchOk(matchId, playerId, ownerMark))
+          broadcastCommand(request, ClientCommand.MatchStarted(matchId, playerId, ownerMark))
         case JoinMatchResult.AlreadyOngoing =>
           log.debug(s"Match with ID $matchId is already ongoing")
           sendError(request, s"Match with ID $matchId is already ongoing")
@@ -75,6 +79,9 @@ final class CommandHandlerActor(playerManager: ActorRef,
 
   private def sendCommand(request: CommandRequest, command: ClientCommand): Unit =
     request.recipient ! SendCommand(request.clientId, command)
+
+  private def broadcastCommand(request: CommandRequest, command: ClientCommand): Unit =
+    request.recipient ! BroadcastCommand(command)
 }
 
 object CommandHandlerActor {

@@ -3,7 +3,7 @@ package xox.server.handler
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import xox.core.protocol.{ClientCommand, ServerCommand}
 import xox.server.game.PlayerManagerActor.LogoutAll
-import xox.server.handler.ClientManagerActor.{ReceivedCommand, Register, SendCommand, Unregister}
+import xox.server.handler.ClientManagerActor.{BroadcastCommand, ReceivedCommand, Register, SendCommand, Unregister}
 import xox.server.handler.CommandManagerActor.HandleCommand
 
 final class ClientManagerActor private(commandManager: ActorRef,
@@ -49,6 +49,12 @@ final class ClientManagerActor private(commandManager: ActorRef,
           // fixme: Handle errors
           log.warning(s"Attempted to send $command command to an unknown client $clientId")
       }
+    case BroadcastCommand(command) =>
+      log.debug(s"Requested $command command broadcast")
+      clients.foreach { case (id, client) =>
+        log.debug(s"Sending $command command to client $id as broadcast member")
+        client ! command
+      }
   }
 }
 
@@ -63,4 +69,6 @@ object ClientManagerActor {
   final case class ReceivedCommand(clientId: String, command: ServerCommand)
 
   final case class SendCommand(clientId: String, command: ClientCommand)
+
+  final case class BroadcastCommand(command: ClientCommand)
 }

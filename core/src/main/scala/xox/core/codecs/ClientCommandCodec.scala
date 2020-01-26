@@ -7,6 +7,7 @@ object ClientCommandCodec {
   import ClientCommand._
   import scodec.codecs._
   import CommonCodecs._
+  import GameCodecs._
 
   lazy val codec: Codec[ClientCommand] = Codec(encoder, decoder)
 
@@ -20,8 +21,12 @@ object ClientCommandCodec {
   private lazy val commandEncoder =
     selectedEncoder[ClientCommand](cmd => Err(s"Cannot encode client command: $cmd")) {
       case _: LoginOk       => loginOkCodec.upcast
+      case _: PlayerLogged  => playerLoggedCodec.upcast
       case _: CreateMatchOk => createMatchOkCodec.upcast
       case _: JoinMatchOk   => joinMatchOkCodec.upcast
+      case _: MatchCreated  => matchCreatedCodec.upcast
+      case _: MatchStarted  => matchStartedCodec.upcast
+      case _: MatchFinished => matchFinishedCodec.upcast
       case Timeout          => timeoutCodec.upcast
       case _: Error         => errorCodec.upcast
     }
@@ -29,24 +34,39 @@ object ClientCommandCodec {
   private def commandDecoder(code: Int): Decoder[ClientCommand] =
     code match {
       case 1       => loginOkCodec
-      case 2       => createMatchOkCodec
-      case 3       => joinMatchOkCodec
+      case 2       => playerLoggedCodec
+      case 3       => createMatchOkCodec
+      case 4       => joinMatchOkCodec
+      case 5       => matchCreatedCodec
+      case 6       => matchStartedCodec
+      case 7       => matchFinishedCodec
+      case 8       => matchListCodec
       case 254     => timeoutCodec
       case 255     => errorCodec
       case unknown => fail(Err(s"Unknown client command code: $unknown"))
     }
 
   private lazy val loginOkCodec = ascii.as[LoginOk]
-  private lazy val createMatchOkCodec = ascii.as[CreateMatchOk]
-  private lazy val joinMatchOkCodec = ascii.as[JoinMatchOk]
+  private lazy val playerLoggedCodec = (ascii :: ascii).as[PlayerLogged]
+  private lazy val createMatchOkCodec = (ascii :: ascii).as[CreateMatchOk]
+  private lazy val joinMatchOkCodec = (ascii :: ascii :: markCodec).as[JoinMatchOk]
+  private lazy val matchCreatedCodec = (ascii :: ascii :: matchParametersCodec).as[MatchCreated]
+  private lazy val matchStartedCodec = (ascii :: ascii :: markCodec).as[MatchStarted]
+  private lazy val matchFinishedCodec = (ascii :: optional(bool, ascii)).as[MatchFinished]
+  private lazy val matchListCodec = list(matchInfoCodec).as[MatchList]
   private lazy val timeoutCodec = provide(Timeout)
   private lazy val errorCodec = ascii.as[Error]
 
   private def commandCode(command: ClientCommand): Int =
     command match {
       case _: LoginOk       => 1
-      case _: CreateMatchOk => 2
-      case _: JoinMatchOk   => 3
+      case _: PlayerLogged  => 2
+      case _: CreateMatchOk => 3
+      case _: JoinMatchOk   => 4
+      case _: MatchCreated  => 5
+      case _: MatchStarted  => 6
+      case _: MatchFinished => 7
+      case _: MatchList     => 8
       case Timeout          => 254
       case _: Error         => 255
     }
