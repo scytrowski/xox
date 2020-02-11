@@ -9,15 +9,15 @@ import io.circe.config.syntax._
 
 import scala.util.Try
 
-final case class Config(server: ServerConfig,
-                        handler: HandlerConfig)
+final case class AppConfig(server: ServerConfig,
+                           protocol: ProtocolConfig)
 
-object Config {
+object AppConfig {
   import ConfigDecoders._
   import io.circe.generic.auto._
 
-  def load(tsConfig: TSConfig = ConfigFactory.load()): Try[Config] =
-    tsConfig.as[Config]("xox").toTry
+  def load(tsConfig: TSConfig = ConfigFactory.load()): Try[AppConfig] =
+    tsConfig.as[AppConfig]("xox").toTry
 }
 
 private object ConfigDecoders {

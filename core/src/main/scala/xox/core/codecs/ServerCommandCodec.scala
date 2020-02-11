@@ -33,9 +33,9 @@ object ServerCommandCodec {
       case unknown => fail(Err(s"Unknown server command code: $unknown"))
     }
 
-  private lazy val loginCodec = ascii.as[Login]
-  private lazy val createMatchCodec = (ascii :: matchParametersCodec).as[CreateMatch]
-  private lazy val joinMatchCodec = (ascii :: ascii).as[JoinMatch]
+  private lazy val loginCodec = string16.as[Login]
+  private lazy val createMatchCodec = (string16 :: matchParametersCodec).as[CreateMatch]
+  private lazy val joinMatchCodec = (string16 :: string16).as[JoinMatch]
 
   private def commandCode(command: ServerCommand): Int =
     command match {

@@ -1,4 +1,4 @@
-package xox.server.fixture
+package xox.server.mock
 
 import xox.server.util.IdGenerator
 

@@ -46,16 +46,16 @@ object ClientCommandCodec {
       case unknown => fail(Err(s"Unknown client command code: $unknown"))
     }
 
-  private lazy val loginOkCodec = ascii.as[LoginOk]
-  private lazy val playerLoggedCodec = (ascii :: ascii).as[PlayerLogged]
-  private lazy val createMatchOkCodec = (ascii :: ascii).as[CreateMatchOk]
-  private lazy val joinMatchOkCodec = (ascii :: ascii :: markCodec).as[JoinMatchOk]
-  private lazy val matchCreatedCodec = (ascii :: ascii :: matchParametersCodec).as[MatchCreated]
-  private lazy val matchStartedCodec = (ascii :: ascii :: markCodec).as[MatchStarted]
-  private lazy val matchFinishedCodec = (ascii :: optional(bool, ascii)).as[MatchFinished]
+  private lazy val loginOkCodec = string16.as[LoginOk]
+  private lazy val playerLoggedCodec = (string16 :: string16).as[PlayerLogged]
+  private lazy val createMatchOkCodec = (string16 :: string16).as[CreateMatchOk]
+  private lazy val joinMatchOkCodec = (string16 :: string16 :: markCodec).as[JoinMatchOk]
+  private lazy val matchCreatedCodec = (string16 :: string16 :: matchParametersCodec).as[MatchCreated]
+  private lazy val matchStartedCodec = (string16 :: string16 :: markCodec).as[MatchStarted]
+  private lazy val matchFinishedCodec = (string16 :: optional(bool, string16)).as[MatchFinished]
   private lazy val matchListCodec = list(matchInfoCodec).as[MatchList]
   private lazy val timeoutCodec = provide(Timeout)
-  private lazy val errorCodec = ascii.as[Error]
+  private lazy val errorCodec = string16.as[Error]
 
   private def commandCode(command: ClientCommand): Int =
     command match {

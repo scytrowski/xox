@@ -12,8 +12,8 @@ object Match {
   final case class WaitingForOpponent(id: String, ownerId: String, parameters: MatchParameters) extends Match {
     override def isInvolved(playerId: String): Boolean = ownerId == playerId
 
-    def start(opponentId: String): Ongoing = {
-      val state = MatchState.create(parameters)
+    def start(opponentId: String)(stateFactory: MatchParameters => MatchState): Ongoing = {
+      val state = stateFactory(parameters)
       Ongoing(id, ownerId, opponentId, state)
     }
   }
