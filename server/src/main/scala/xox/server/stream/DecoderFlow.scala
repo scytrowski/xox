@@ -19,5 +19,5 @@ object DecoderFlow {
       .map(akkaBytes => BitVector(akkaBytes.toArray))
       .mapConcat(bytes => decoder.decode(bytes).toTry.get.value)
 
-  private val decoder = listOfN(uint8, ServerCommandCodec.codec).asDecoder
+  private val decoder = list(ServerCommandCodec.codec).asDecoder
 }

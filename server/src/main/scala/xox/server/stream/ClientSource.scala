@@ -5,15 +5,16 @@ import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.stream.scaladsl.{Source, Tcp}
 import xox.server.config.ServerConfig
 import xox.server.net.Client
+import xox.server.util.IdGenerator
 
 import scala.concurrent.Future
 
 object ClientSource {
-  def apply(serverConfig: ServerConfig)
-           (idSource: Source[String, _])
+  def apply(serverConfig: ServerConfig, idGenerator: IdGenerator)
            (implicit system: ActorSystem): Source[Client, Future[ServerBinding]] =
     Tcp().bind(serverConfig.address.getHostString, serverConfig.address.getPort)
-      .zip(idSource).map { case (connection, id) =>
+      .map { connection =>
+        val id = idGenerator.generate
         Client(id, connection.remoteAddress, connection.flow)
       }.log("Connecting Clients")
 }

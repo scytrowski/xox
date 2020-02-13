@@ -3,6 +3,7 @@ package xox.server
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import xox.server.config.AppConfig
+import xox.server.util.UuidIdGenerator
 
 import scala.util.{Failure, Success}
 
@@ -12,7 +13,7 @@ object Application extends App {
 
   AppConfig.load() match {
     case Success(config) =>
-      val processFuture = ServerInitializer.initialize(config).run()
+      val processFuture = ServerInitializer.initialize(config, UuidIdGenerator).run()
 
       sys.addShutdownHook {
         processFuture.flatMap(_.unbind())(system.dispatcher)

@@ -46,5 +46,5 @@ class DecoderFlowTest extends StreamSpec("DecoderFlowTest") with EitherValues wi
   private def akkaBytes(scodecBytes: BitVector): ByteString =
     ByteString(scodecBytes.toByteArray)
 
-  private val encoder: Encoder[List[ServerCommand]] = variableSizeBytesLong(uint32, listOfN(uint8, ServerCommandCodec.codec))
+  private val encoder: Encoder[List[ServerCommand]] = variableSizeBytesLong(uint32, list(ServerCommandCodec.codec))
 }

@@ -1,75 +1,100 @@
 package xox.server
 
-import akka.util.ByteString
-import org.scalatest.{Inside, TryValues}
-import scodec.bits.BitVector
-import scodec.codecs._
-import scodec.stream.StreamDecoder
-import scodec.{Decoder, Encoder}
-import xox.core.codecs.{ClientCommandCodec, ServerCommandCodec}
+import org.scalatest.{Inside, OptionValues, TryValues}
 import xox.core.game.{Mark, MatchParameters}
-import xox.core.protocol.ClientCommand.{CreateMatchOk, JoinMatchOk, LoginOk, MatchCreated, MatchStarted, PlayerLogged}
+import xox.core.protocol.ClientCommand._
 import xox.core.protocol.ServerCommand.{CreateMatch, JoinMatch, Login}
-import xox.core.protocol.{ClientCommand, ServerCommand}
-import xox.server.fixture.{ConfigFixture, ServerFixture, SocketFixture, StreamSpec}
+import xox.server.fixture.{ClientFixture, ConfigFixture, ServerFixture, StreamSpec}
+import xox.server.syntax.list._
 
-class ServerIntegrationTest extends StreamSpec("ServerIntegrationTest") with ServerFixture with ConfigFixture with SocketFixture with TryValues with Inside {
+import scala.util.Random
+
+class ServerIntegrationTest extends StreamSpec("ServerIntegrationTest") with ServerFixture with ConfigFixture with ClientFixture with TryValues with OptionValues with Inside {
   "Server" should {
 
     "handle single command" in {
-      withServer(appConfig) { binding =>
-        withConnection(binding.localAddress) { socket =>
-          socket.send(encode(Login("abc")))
+      val playerId = randomString()
 
-          expectLoginResult(socket, "abc")
+      withServer(appConfig, randomString(), playerId) { binding =>
+        withClient(binding.localAddress) { client =>
+          client.send(Login("abc"))
+
+          expectLoginResult(client, "abc") mustBe playerId
         }
       }
     }
 
     "handle sequence of commands" in {
-      withServer(appConfig) { binding =>
-        withConnection(binding.localAddress) { socket =>
-          socket.send(encode(Login("abc")))
-          val firstPlayerId = expectLoginResult(socket, "abc")
+      val firstPlayerId = randomString()
+      val secondPlayerId = randomString()
+      val matchId = randomString()
 
-          socket.send(encode(Login("def")))
-          val secondPlayerId = expectLoginResult(socket, "def")
+      withServer(appConfig, randomString(), firstPlayerId, secondPlayerId, matchId) { binding =>
+        withClient(binding.localAddress) { client =>
+          client.send(Login("abc"))
+          expectLoginResult(client, "abc") mustBe firstPlayerId
+
+          client.send(Login("def"))
+          expectLoginResult(client, "def") mustBe secondPlayerId
 
           val matchParameters = MatchParameters(3)
-          socket.send(encode(CreateMatch(firstPlayerId, matchParameters)))
-          val matchId = expectCreateMatchResult(socket, firstPlayerId, matchParameters)
+          client.send(CreateMatch(firstPlayerId, matchParameters))
+          expectCreateMatchResult(client, firstPlayerId, matchParameters) mustBe matchId
 
-          socket.send(encode(JoinMatch(secondPlayerId, matchId)))
-          expectJoinMatchResult(socket, matchId, secondPlayerId)
+          client.send(JoinMatch(secondPlayerId, matchId))
+          expectJoinMatchResult(client, matchId, secondPlayerId)
         }
       }
     }
 
     "handle chunk of commands" in {
-      withServer(appConfig) { binding =>
-        withConnection(binding.localAddress) { socket =>
-          socket.send(encode(
+      val firstPlayerId = randomString()
+      val secondPlayerId = randomString()
+      val thirdPlayerId = randomString()
+
+      withServer(appConfig, randomString(), firstPlayerId, secondPlayerId, thirdPlayerId) { binding =>
+        withClient(binding.localAddress) { client =>
+          client.send(
             Login("abc"),
             Login("def"),
             Login("ghi")
-          ))
+          )
 
-          expectLoginResults(socket, "abc", "def", "ghi")
+          expectLoginResults(client, "abc", "def", "ghi") must contain theSameElementsInOrderAs List(firstPlayerId, secondPlayerId, thirdPlayerId)
         }
       }
     }
 
     "handle concurrent clients" in {
-      // fixme: To be implemented
+      val clientsCount = 2
+      val clientIds = randomStrings(clientsCount)
+      val playerIds = randomStrings(clientsCount)
+
+      withServer(appConfig, clientIds ++ playerIds:_*) { binding =>
+        withClients(binding.localAddress, clientsCount) { clients =>
+          val nicks = randomStrings(clientsCount)
+
+          clients.zip(nicks).foreach { case (client, nick) => client.send(Login(nick)) }
+          clients.foreach { client =>
+            val commands = client.receiveN(clientsCount + 1)
+            val loginOk = commands.collect { case l: LoginOk => l }.single.value
+            val playerLogged = commands.collect { case l: PlayerLogged => l }
+
+            playerIds must contain (loginOk.playerId)
+            playerLogged.map(_.playerId) must contain theSameElementsAs playerIds
+            playerLogged.map(_.nick) must contain theSameElementsAs nicks
+          }
+        }
+      }
     }
 
   }
 
-  private def expectLoginResult(socket: TestSocket, nick: String): String =
-    expectLoginResults(socket, nick).head
+  private def expectLoginResult(client: TestClient, nick: String): String =
+    expectLoginResults(client, nick).head
 
-  private def expectLoginResults(socket: TestSocket, nicks: String*): List[String] =
-    receiveN(socket, 2 * nicks.length)
+  private def expectLoginResults(client: TestClient, nicks: String*): List[String] =
+    client.receiveN(2 * nicks.length)
       .grouped(2)
       .toList
       .zip(nicks)
@@ -79,38 +104,17 @@ class ServerIntegrationTest extends StreamSpec("ServerIntegrationTest") with Ser
         }
       }
 
-  private def expectCreateMatchResult(socket: TestSocket, ownerId: String, parameters: MatchParameters): String =
-    inside(receiveN(socket, 2)) {
+  private def expectCreateMatchResult(client: TestClient, ownerId: String, parameters: MatchParameters): String =
+    inside(client.receiveN(2)) {
       case CreateMatchOk(_, oId1) :: MatchCreated(matchId, oId2, p) :: Nil if oId1 == ownerId && oId2 == ownerId && p == parameters => matchId
     }
 
-  private def expectJoinMatchResult(socket: TestSocket, matchId: String, opponentId: String): Mark =
-    inside(receiveN(socket, 2)) {
+  private def expectJoinMatchResult(client: TestClient, matchId: String, opponentId: String): Mark =
+    inside(client.receiveN(2)) {
       case JoinMatchOk(mId1, oId1, _) :: MatchStarted(mId2, oId2, mark) :: Nil if mId1 == matchId && oId1 == opponentId && mId2 == matchId && oId2 == opponentId => mark
     }
 
-  private def encode(commands: ServerCommand*): ByteString =
-    akkaBytes {
-      encoder.encode(commands.toList).toTry.success.value
-    }
+  private def randomStrings(count: Int, length: Int = 10) = List.fill(count)(randomString(length))
 
-  private def receiveN(socket: TestSocket, count: Int): List[ClientCommand] = {
-    val commands = decode(socket.receive)
-    if (commands.length >= count)
-      commands.take(count)
-    else
-      commands ++ receiveN(socket, count - commands.length)
-  }
-
-  private def decode(akkaBytes: ByteString): List[ClientCommand] = {
-    val result = decoder.decode(scodecBits(akkaBytes)).toTry.success.value
-    result.value
-  }
-
-  private def akkaBytes(scodecBits: BitVector): ByteString = ByteString(scodecBits.toByteArray)
-
-  private def scodecBits(akkaBytes: ByteString): BitVector = BitVector(akkaBytes.toArray)
-
-  private val encoder: Encoder[List[ServerCommand]] = variableSizeBytesLong(uint32, listOfN(uint8, ServerCommandCodec.codec)).asEncoder
-  private val decoder: Decoder[List[ClientCommand]] = StreamDecoder.many(variableSizeBytesLong(uint32, ClientCommandCodec.codec).asDecoder).strict.map(_.toList)
+  private def randomString(length: Int = 10) = List.fill(length)(Random.nextPrintableChar()).mkString
 }

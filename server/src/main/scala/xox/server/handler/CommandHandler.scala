@@ -57,7 +57,7 @@ final class CommandHandlerLive(idGenerator: IdGenerator) extends CommandHandler 
   private def handleJoinMatch(clientId: String, playerId: String, matchId: String): State[ServerState, List[OutgoingCommand]] =
     State { state =>
       state.joinMatch(matchId, playerId) match {
-        case JoinMatchResult.Ok(updatedState, ownerId, ownerMark) =>
+        case JoinMatchResult.Ok(updatedState, _, ownerMark) =>
           val commands = List(
             Private(clientId, JoinMatchOk(matchId, playerId, ownerMark)),
             Broadcast(MatchStarted(matchId, playerId, ownerMark))
