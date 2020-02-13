@@ -41,3 +41,9 @@ lazy val server = (project in file("server"))
     // https://mvnrepository.com/artifact/com.typesafe.akka/akka-stream-testkit
     libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % "2.6.3" % Test
   )
+
+lazy val api = (project in file("api"))
+  .dependsOn(core)
+  .settings(
+    scalacOptions += "-Ypartial-unification"
+  )
