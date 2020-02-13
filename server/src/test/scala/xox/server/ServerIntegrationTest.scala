@@ -66,7 +66,7 @@ class ServerIntegrationTest extends StreamSpec("ServerIntegrationTest") with Ser
     }
 
     "handle concurrent clients" in {
-      val clientsCount = 2
+      val clientsCount = 10
       val clientIds = randomStrings(clientsCount)
       val playerIds = randomStrings(clientsCount)
 

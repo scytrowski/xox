@@ -2,7 +2,7 @@ package xox.server.stream
 
 import java.net.InetSocketAddress
 
-import akka.stream.scaladsl.{Keep, Sink}
+import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest.concurrent.ScalaFutures
 import xox.server.config.ServerConfig
@@ -25,11 +25,9 @@ class ClientSourceTest extends StreamSpec("ClientSourceTest") with ClientFixture
 
       whenReady(bindingFut) { binding =>
         withClients(binding.localAddress, ids.length) { clients =>
-          ids.zip(clients).foreach { case (id, client) =>
-            val connected = clientProbe.requestNext()
-            connected.id mustBe id
-            connected.address mustBe client.address
-          }
+          val connected = List.fill(clients.length)(clientProbe.requestNext())
+          connected.map(_.id) must contain theSameElementsAs ids
+          connected.map(_.address) must contain theSameElementsAs clients.map(_.address)
         }
       }
     }

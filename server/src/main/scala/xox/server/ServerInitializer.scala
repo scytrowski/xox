@@ -25,6 +25,7 @@ object ServerInitializer {
     val decoderFlow = DecoderFlow(config.protocol)
     val encoderFlow = EncoderFlow(config.protocol)
     val handlerFlow = HandlerFlow(handler, state)
-    ServerGraph(connectionSource, decoderFlow, encoderFlow, handlerFlow)
+    val deliveryFlow = DeliveryFlow()
+    ServerGraph(connectionSource, decoderFlow, encoderFlow, handlerFlow, deliveryFlow)
   }
 }

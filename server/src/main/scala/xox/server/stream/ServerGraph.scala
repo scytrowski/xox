@@ -13,15 +13,20 @@ object ServerGraph {
   def apply(clientSource: Source[Client, Future[ServerBinding]],
             decoderFlow: Flow[ByteString, ServerCommand, _],
             encoderFlow: Flow[ClientCommand, ByteString, _],
-            handlerFlow: Flow[IncomingCommand, OutgoingCommand, _])(implicit mat: Materializer): RunnableGraph[Future[ServerBinding]] =
+            handlerFlow: Flow[IncomingCommand, OutgoingCommand, _],
+            deliveryFlow: Flow[OutgoingCommand, OutgoingCommand, _])(implicit mat: Materializer): RunnableGraph[Future[ServerBinding]] = {
     clientSource.toMat(Sink.foreach { client =>
       client.flow.join {
+        val delivery = deliveryFlow
+          .filter(_.isAddressedTo(client.id))
+          .map(_.command)
         Flow[ByteString]
           .via(decoderFlow)
           .map(IncomingCommand(client.id, _))
           .via(handlerFlow)
-          .collect { case out: OutgoingCommand if out.isAddressedTo(client.id) => out.command }
+          .via(delivery)
           .via(encoderFlow)
       }.run()
     })(Keep.left)
+  }
 }
