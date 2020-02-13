@@ -13,11 +13,13 @@ object GameCodecs {
       case Mark.O => 1
     },
     uint8.emap {
-      case 0       => Attempt.successful(Mark.X)
-      case 1       => Attempt.successful(Mark.O)
-      case invalid => Attempt.failure(Err(s"Cannot decode mark from value: $invalid"))
+      case 0 => Attempt.successful(Mark.X)
+      case 1 => Attempt.successful(Mark.O)
+      case invalid =>
+        Attempt.failure(Err(s"Cannot decode mark from value: $invalid"))
     }
   )
   val matchParametersCodec: Codec[MatchParameters] = uint8.as[MatchParameters]
-  val matchInfoCodec: Codec[MatchInfo] = (string16 :: optional(bool, string16) :: matchParametersCodec).as[MatchInfo]
+  val matchInfoCodec: Codec[MatchInfo] =
+    (string16 :: optional(bool, string16) :: matchParametersCodec).as[MatchInfo]
 }

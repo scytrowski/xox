@@ -9,5 +9,3 @@ trait IdGenerator {
 object UuidIdGenerator extends IdGenerator {
   override def generate: String = UUID.randomUUID().toString
 }
-
-

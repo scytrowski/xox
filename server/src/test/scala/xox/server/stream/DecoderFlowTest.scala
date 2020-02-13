@@ -13,7 +13,10 @@ import xox.core.protocol.ServerCommand.{CreateMatch, JoinMatch, Login}
 import xox.server.config.ProtocolConfig
 import xox.server.fixture.StreamSpec
 
-class DecoderFlowTest extends StreamSpec("DecoderFlowTest") with EitherValues with ScalaFutures {
+class DecoderFlowTest
+    extends StreamSpec("DecoderFlowTest")
+    with EitherValues
+    with ScalaFutures {
   import scodec.codecs._
 
   "DecoderFlow" should {
@@ -31,13 +34,20 @@ class DecoderFlowTest extends StreamSpec("DecoderFlowTest") with EitherValues wi
       Source(List(bytes1, bytes2))
         .via(DecoderFlow(ProtocolConfig(1024)))
         .runWith(Sink.seq)
-        .futureValue must contain theSameElementsInOrderAs List(command1, command2, command3, command4, command5)
+        .futureValue must contain theSameElementsInOrderAs List(
+        command1,
+        command2,
+        command3,
+        command4,
+        command5
+      )
     }
 
   }
 
   private def encode(commands: ServerCommand*): ByteString =
-    encoder.encode(commands.toList)
+    encoder
+      .encode(commands.toList)
       .toEither
       .map(akkaBytes)
       .right
@@ -46,5 +56,6 @@ class DecoderFlowTest extends StreamSpec("DecoderFlowTest") with EitherValues wi
   private def akkaBytes(scodecBytes: BitVector): ByteString =
     ByteString(scodecBytes.toByteArray)
 
-  private val encoder: Encoder[List[ServerCommand]] = variableSizeBytesLong(uint32, list(ServerCommandCodec.codec))
+  private val encoder: Encoder[List[ServerCommand]] =
+    variableSizeBytesLong(uint32, list(ServerCommandCodec.codec))
 }

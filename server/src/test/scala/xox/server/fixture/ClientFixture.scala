@@ -16,23 +16,32 @@ import scala.concurrent.duration._
 
 trait ClientFixture extends ScalaFutures { self: StreamSpec =>
   def withClient[U](address: InetSocketAddress)(f: TestClient => U): Unit =
-    withClients(address, 1)(f compose(_.head))
+    withClients(address, 1)(f compose (_.head))
 
-  def withClients[U](address: InetSocketAddress, count: Int)(f: List[TestClient] => U): Unit = {
+  def withClients[U](address: InetSocketAddress, count: Int)(
+      f: List[TestClient] => U
+  ): Unit = {
     implicit val ec: ExecutionContext = system.dispatcher
-    val clients = Future.sequence {
-      1.to(count).map { _ =>
-        val clientFlow = tcp.outgoingConnection(address)
-        val publisher = TestPublisher.probe[ServerCommand]()
-        val commandSource = Source.fromPublisher(publisher).via(encoderFlow)
-        val subscriber = TestSubscriber.probe[ClientCommand]()
-        val commandSink = decoderFlow.to(Sink.fromSubscriber(subscriber))
-        val commandFlow = Flow.fromSinkAndSourceCoupled(commandSink, commandSource)
-        clientFlow.join(commandFlow)
-          .run()
-          .map(connection => new TestClient(connection.localAddress, publisher, subscriber))
+    val clients = Future
+      .sequence {
+        1.to(count).map { _ =>
+          val clientFlow    = tcp.outgoingConnection(address)
+          val publisher     = TestPublisher.probe[ServerCommand]()
+          val commandSource = Source.fromPublisher(publisher).via(encoderFlow)
+          val subscriber    = TestSubscriber.probe[ClientCommand]()
+          val commandSink   = decoderFlow.to(Sink.fromSubscriber(subscriber))
+          val commandFlow =
+            Flow.fromSinkAndSourceCoupled(commandSink, commandSource)
+          clientFlow
+            .join(commandFlow)
+            .run()
+            .map(connection =>
+              new TestClient(connection.localAddress, publisher, subscriber)
+            )
+        }
       }
-    }.futureValue.toList
+      .futureValue
+      .toList
 
     try {
       f(clients)
@@ -41,10 +50,13 @@ trait ClientFixture extends ScalaFutures { self: StreamSpec =>
     }
   }
 
-  protected final class TestClient(val address: InetSocketAddress,
-                                   private val publisher: TestPublisher.Probe[ServerCommand],
-                                   private val subscriber: TestSubscriber.Probe[ClientCommand]) {
-    def send(commands: ServerCommand*): Unit = commands.foreach(publisher.sendNext)
+  final protected class TestClient(
+      val address: InetSocketAddress,
+      private val publisher: TestPublisher.Probe[ServerCommand],
+      private val subscriber: TestSubscriber.Probe[ClientCommand]
+  ) {
+    def send(commands: ServerCommand*): Unit =
+      commands.foreach(publisher.sendNext)
 
     def receive: ClientCommand = receiveN(1).head
 

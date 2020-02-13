@@ -13,13 +13,17 @@ object ServerCommandCodec {
 
   lazy val encoder: Encoder[ServerCommand] =
     (uint8 ~ commandEncoder.encodeOnly)
-      .xmapc { case (_, command) => command } (command => commandCode(command) -> command)
+      .xmapc { case (_, command) => command }(command =>
+        commandCode(command) -> command
+      )
 
   lazy val decoder: Decoder[ServerCommand] =
     uint8.flatMap(commandDecoder)
 
   private lazy val commandEncoder =
-    selectedEncoder[ServerCommand](cmd => Err(s"Cannot encode server command: $cmd")) {
+    selectedEncoder[ServerCommand](cmd =>
+      Err(s"Cannot encode server command: $cmd")
+    ) {
       case _: Login       => loginCodec.upcast
       case _: CreateMatch => createMatchCodec.upcast
       case _: JoinMatch   => joinMatchCodec.upcast
@@ -34,13 +38,14 @@ object ServerCommandCodec {
     }
 
   private lazy val loginCodec = string16.as[Login]
-  private lazy val createMatchCodec = (string16 :: matchParametersCodec).as[CreateMatch]
+  private lazy val createMatchCodec =
+    (string16 :: matchParametersCodec).as[CreateMatch]
   private lazy val joinMatchCodec = (string16 :: string16).as[JoinMatch]
 
   private def commandCode(command: ServerCommand): Int =
     command match {
-      case _: Login => 1
+      case _: Login       => 1
       case _: CreateMatch => 2
-      case _: JoinMatch => 3
+      case _: JoinMatch   => 3
     }
 }

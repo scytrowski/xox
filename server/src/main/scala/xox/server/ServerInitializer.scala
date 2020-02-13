@@ -13,19 +13,28 @@ import xox.server.util.IdGenerator
 import scala.concurrent.Future
 
 object ServerInitializer {
-  def initialize(config: AppConfig, idGenerator: IdGenerator)(implicit mat: Materializer): RunnableGraph[Future[ServerBinding]] = {
+  def initialize(config: AppConfig, idGenerator: IdGenerator)(
+      implicit mat: Materializer
+  ): RunnableGraph[Future[ServerBinding]] = {
     implicit val system: ActorSystem = mat.system
 
     val matchStateFactory = new MatchStateFactoryLive
 
-    val state = ServerStateLive(Map.empty, Map.empty, idGenerator, matchStateFactory)
+    val state =
+      ServerStateLive(Map.empty, Map.empty, idGenerator, matchStateFactory)
     val handler = new CommandHandlerLive(idGenerator)
 
     val connectionSource = ClientSource(config.server, idGenerator)
-    val decoderFlow = DecoderFlow(config.protocol)
-    val encoderFlow = EncoderFlow(config.protocol)
-    val handlerFlow = HandlerFlow(handler, state)
-    val deliveryFlow = DeliveryFlow()
-    ServerGraph(connectionSource, decoderFlow, encoderFlow, handlerFlow, deliveryFlow)
+    val decoderFlow      = DecoderFlow(config.protocol)
+    val encoderFlow      = EncoderFlow(config.protocol)
+    val handlerFlow      = HandlerFlow(handler, state)
+    val deliveryFlow     = DeliveryFlow()
+    ServerGraph(
+      connectionSource,
+      decoderFlow,
+      encoderFlow,
+      handlerFlow,
+      deliveryFlow
+    )
   }
 }

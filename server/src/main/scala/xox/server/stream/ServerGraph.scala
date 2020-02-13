@@ -10,23 +10,27 @@ import xox.server.net.{Client, IncomingCommand, OutgoingCommand}
 import scala.concurrent.Future
 
 object ServerGraph {
-  def apply(clientSource: Source[Client, Future[ServerBinding]],
-            decoderFlow: Flow[ByteString, ServerCommand, _],
-            encoderFlow: Flow[ClientCommand, ByteString, _],
-            handlerFlow: Flow[IncomingCommand, OutgoingCommand, _],
-            deliveryFlow: Flow[OutgoingCommand, OutgoingCommand, _])(implicit mat: Materializer): RunnableGraph[Future[ServerBinding]] = {
+  def apply(
+      clientSource: Source[Client, Future[ServerBinding]],
+      decoderFlow: Flow[ByteString, ServerCommand, _],
+      encoderFlow: Flow[ClientCommand, ByteString, _],
+      handlerFlow: Flow[IncomingCommand, OutgoingCommand, _],
+      deliveryFlow: Flow[OutgoingCommand, OutgoingCommand, _]
+  )(implicit mat: Materializer): RunnableGraph[Future[ServerBinding]] = {
     clientSource.toMat(Sink.foreach { client =>
-      client.flow.join {
-        val delivery = deliveryFlow
-          .filter(_.isAddressedTo(client.id))
-          .map(_.command)
-        Flow[ByteString]
-          .via(decoderFlow)
-          .map(IncomingCommand(client.id, _))
-          .via(handlerFlow)
-          .via(delivery)
-          .via(encoderFlow)
-      }.run()
+      client.flow
+        .join {
+          val delivery = deliveryFlow
+            .filter(_.isAddressedTo(client.id))
+            .map(_.command)
+          Flow[ByteString]
+            .via(decoderFlow)
+            .map(IncomingCommand(client.id, _))
+            .via(handlerFlow)
+            .via(delivery)
+            .via(encoderFlow)
+        }
+        .run()
     })(Keep.left)
   }
 }

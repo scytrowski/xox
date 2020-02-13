@@ -12,10 +12,15 @@ import xox.server.config.ProtocolConfig
 object DecoderFlow {
   import scodec.codecs._
 
-  def apply(protocolConfig: ProtocolConfig)(implicit system: ActorSystem): Flow[ByteString, ServerCommand, NotUsed] =
+  def apply(
+      protocolConfig: ProtocolConfig
+  )(implicit system: ActorSystem): Flow[ByteString, ServerCommand, NotUsed] =
     Flow[ByteString]
       .log("Incoming Raw Bytes")
-      .via(Framing.simpleFramingProtocolDecoder(protocolConfig.`max-message-length`))
+      .via(
+        Framing
+          .simpleFramingProtocolDecoder(protocolConfig.`max-message-length`)
+      )
       .map(akkaBytes => BitVector(akkaBytes.toArray))
       .mapConcat(bytes => decoder.decode(bytes).toTry.get.value)
 

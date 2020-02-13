@@ -7,5 +7,6 @@ trait MatchStateFactory {
 }
 
 final class MatchStateFactoryLive extends MatchStateFactory {
-  override def create(parameters: MatchParameters): MatchState = MatchState.create(parameters)
+  override def create(parameters: MatchParameters): MatchState =
+    MatchState.create(parameters)
 }

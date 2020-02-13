@@ -9,8 +9,7 @@ import io.circe.config.syntax._
 
 import scala.util.Try
 
-final case class AppConfig(server: ServerConfig,
-                           protocol: ProtocolConfig)
+final case class AppConfig(server: ServerConfig, protocol: ProtocolConfig)
 
 object AppConfig {
   import ConfigDecoders._
@@ -25,7 +24,7 @@ private object ConfigDecoders {
     Decoder.decodeString.emap { addrStr =>
       addrStr.lastIndexOf(':') match {
         case -1 => Left("Invalid Internet Socket Address format")
-        case n  =>
+        case n =>
           val (hostPart, portPart) = addrStr.splitAt(n)
           for {
             host <- parseInetAddress(hostPart)
@@ -35,8 +34,7 @@ private object ConfigDecoders {
     }
 
   private def parseInetAddress(str: String): Either[String, InetAddress] =
-    Try(Option(InetAddress.getByName(str)))
-      .toEither
+    Try(Option(InetAddress.getByName(str))).toEither
       .leftMap(_ => "Invalid Internet Address format")
       .flatMap {
         case Some(addr) => addr.asRight

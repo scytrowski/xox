@@ -34,25 +34,29 @@ class ServerStateTest extends AnyWordSpec with Matchers {
     "createMatch" should {
 
       "successfully create new match" in {
-        val player = Player("456", "abc", "123")
+        val player          = Player("456", "abc", "123")
         val matchParameters = MatchParameters(4)
-        val state = createState(id = "789", players = List(player))
+        val state           = createState(id = "789", players = List(player))
 
         state.createMatch("456", matchParameters) mustBe CreateMatchResult.Ok(
-          state.copy(matches = mkMatches(Match.WaitingForOpponent("789", "456", matchParameters))),
+          state.copy(matches =
+            mkMatches(Match.WaitingForOpponent("789", "456", matchParameters))
+          ),
           "789"
         )
       }
 
       "inform requesting player is already in some match" in {
-        val player = Player("456", "abc", "123")
+        val player          = Player("456", "abc", "123")
         val matchParameters = MatchParameters(4)
         val state = createState(
           players = List(player),
-          matches = List(Match.WaitingForOpponent("789", "456", matchParameters))
+          matches =
+            List(Match.WaitingForOpponent("789", "456", matchParameters))
         )
 
-        state.createMatch("456", matchParameters) mustBe CreateMatchResult.AlreadyInMatch("789")
+        state.createMatch("456", matchParameters) mustBe CreateMatchResult
+          .AlreadyInMatch("789")
       }
 
       "inform requesting player is unknown" in {
@@ -66,10 +70,11 @@ class ServerStateTest extends AnyWordSpec with Matchers {
     "joinMatch" should {
 
       "successfully join match" in {
-        val owner = Player("456", "abc", "123")
-        val opponent = Player("789", "def", "123")
+        val owner           = Player("456", "abc", "123")
+        val opponent        = Player("789", "def", "123")
         val matchParameters = MatchParameters(3)
-        val notStartedMatch = Match.WaitingForOpponent("012", "456", matchParameters)
+        val notStartedMatch =
+          Match.WaitingForOpponent("012", "456", matchParameters)
         val matchState = MatchState.create(matchParameters)
         val state = createState(
           matchState = matchState,
@@ -78,25 +83,34 @@ class ServerStateTest extends AnyWordSpec with Matchers {
         )
 
         state.joinMatch("012", "789") mustBe JoinMatchResult.Ok(
-          state.copy(matches = mkMatches(notStartedMatch.start(opponent.id)(_ => matchState))),
+          state.copy(matches =
+            mkMatches(notStartedMatch.start(opponent.id)(_ => matchState))
+          ),
           owner.id,
           matchState.ownerMark
         )
       }
 
       "inform requested match is already started" in {
-        val owner = Player("456", "abc", "123")
+        val owner    = Player("456", "abc", "123")
         val opponent = Player("789", "def", "123")
         val state = createState(
           players = List(owner, opponent),
-          matches = List(Match.Ongoing("012", owner.id, "345", MatchState.create(MatchParameters(3))))
+          matches = List(
+            Match.Ongoing(
+              "012",
+              owner.id,
+              "345",
+              MatchState.create(MatchParameters(3))
+            )
+          )
         )
 
         state.joinMatch("012", "789") mustBe JoinMatchResult.AlreadyStarted
       }
 
       "inform requesting player is already in match" in {
-        val owner = Player("456", "abc", "123")
+        val owner    = Player("456", "abc", "123")
         val opponent = Player("789", "def", "123")
         val state = createState(
           players = List(owner, opponent),
@@ -106,21 +120,24 @@ class ServerStateTest extends AnyWordSpec with Matchers {
           )
         )
 
-        state.joinMatch("012", "789") mustBe JoinMatchResult.AlreadyInMatch("345")
+        state.joinMatch("012", "789") mustBe JoinMatchResult.AlreadyInMatch(
+          "345"
+        )
       }
 
       "inform requesting player is unknown" in {
         val owner = Player("456", "abc", "123")
         val state = createState(
           players = List(owner),
-          matches = List(Match.WaitingForOpponent("012", "456", MatchParameters(3)))
+          matches =
+            List(Match.WaitingForOpponent("012", "456", MatchParameters(3)))
         )
 
         state.joinMatch("012", "789") mustBe JoinMatchResult.UnknownPlayer
       }
 
       "inform requested match is unknown" in {
-        val owner = Player("456", "abc", "123")
+        val owner    = Player("456", "abc", "123")
         val opponent = Player("789", "def", "123")
         val state = createState(
           players = List(owner, opponent)
@@ -133,15 +150,17 @@ class ServerStateTest extends AnyWordSpec with Matchers {
 
   }
 
-  private def createState(id: String = Random.nextString(10),
-                          matchState: MatchState = MatchState.create(MatchParameters(4)),
-                          players: List[Player] = Nil,
-                          matches: List[Match] = Nil): ServerStateLive =
+  private def createState(
+      id: String = Random.nextString(10),
+      matchState: MatchState = MatchState.create(MatchParameters(4)),
+      players: List[Player] = Nil,
+      matches: List[Match] = Nil
+  ): ServerStateLive =
     ServerStateLive(
-      mkPlayers(players:_*),
-      mkMatches(matches:_*),
+      mkPlayers(players: _*),
+      mkMatches(matches: _*),
       new TestIdGenerator(id),
-      new TestMatchStateFactory(matchState),
+      new TestMatchStateFactory(matchState)
     )
 
   private def mkPlayers(players: Player*): Map[String, Player] =

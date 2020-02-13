@@ -8,17 +8,18 @@ import xox.server.util.UuidIdGenerator
 import scala.util.{Failure, Success}
 
 object Application extends App {
-  implicit val system: ActorSystem = ActorSystem()
+  implicit val system: ActorSystem        = ActorSystem()
   implicit val materializer: Materializer = Materializer(system)
 
   AppConfig.load() match {
     case Success(config) =>
-      val processFuture = ServerInitializer.initialize(config, UuidIdGenerator).run()
+      val processFuture =
+        ServerInitializer.initialize(config, UuidIdGenerator).run()
 
       sys.addShutdownHook {
         processFuture.flatMap(_.unbind())(system.dispatcher)
       }
-    case Failure(error)  =>
+    case Failure(error) =>
       system.log.error(error, "Unable to load configuration")
   }
 }

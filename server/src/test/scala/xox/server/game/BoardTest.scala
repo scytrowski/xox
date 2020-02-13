@@ -55,25 +55,37 @@ class BoardTest extends AnyWordSpec with Matchers with OptionValues {
         "win in row" in {
           val board = Board.create(3)
 
-          board.set(0, 1, Mark.X).set(1, 1, Mark.X).set(2, 1, Mark.X) mustBe SetResult.Victory
+          board
+            .set(0, 1, Mark.X)
+            .set(1, 1, Mark.X)
+            .set(2, 1, Mark.X) mustBe SetResult.Victory
         }
 
         "win in column" in {
           val board = Board.create(3)
 
-          board.set(1, 0, Mark.X).set(1, 1, Mark.X).set(1, 2, Mark.X) mustBe SetResult.Victory
+          board
+            .set(1, 0, Mark.X)
+            .set(1, 1, Mark.X)
+            .set(1, 2, Mark.X) mustBe SetResult.Victory
         }
 
         "win in main diagonal" in {
           val board = Board.create(3)
 
-          board.set(0, 0, Mark.X).set(1, 1, Mark.X).set(2, 2, Mark.X) mustBe SetResult.Victory
+          board
+            .set(0, 0, Mark.X)
+            .set(1, 1, Mark.X)
+            .set(2, 2, Mark.X) mustBe SetResult.Victory
         }
 
         "win in side diagonal" in {
           val board = Board.create(3)
 
-          board.set(2, 0, Mark.X).set(1, 1, Mark.X).set(0, 2, Mark.X) mustBe SetResult.Victory
+          board
+            .set(2, 0, Mark.X)
+            .set(1, 1, Mark.X)
+            .set(0, 2, Mark.X) mustBe SetResult.Victory
         }
 
       }

@@ -10,11 +10,14 @@ import xox.server.util.IdGenerator
 import scala.concurrent.Future
 
 object ClientSource {
-  def apply(serverConfig: ServerConfig, idGenerator: IdGenerator)
-           (implicit system: ActorSystem): Source[Client, Future[ServerBinding]] =
-    Tcp().bind(serverConfig.address.getHostString, serverConfig.address.getPort)
+  def apply(serverConfig: ServerConfig, idGenerator: IdGenerator)(
+      implicit system: ActorSystem
+  ): Source[Client, Future[ServerBinding]] =
+    Tcp()
+      .bind(serverConfig.address.getHostString, serverConfig.address.getPort)
       .map { connection =>
         val id = idGenerator.generate
         Client(id, connection.remoteAddress, connection.flow)
-      }.log("Connecting Clients")
+      }
+      .log("Connecting Clients")
 }

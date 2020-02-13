@@ -4,6 +4,8 @@ version := "0.1"
 
 scalaVersion := "2.13.1"
 
+addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
+
 lazy val core = (project in file("core"))
   .settings(
     // https://mvnrepository.com/artifact/org.scodec/scodec-core
@@ -36,6 +38,6 @@ lazy val server = (project in file("server"))
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0-M2" % Test,
     // https://mvnrepository.com/artifact/com.typesafe.akka/akka-testkit
     libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.6.3" % Test,
-      // https://mvnrepository.com/artifact/com.typesafe.akka/akka-stream-testkit
+    // https://mvnrepository.com/artifact/com.typesafe.akka/akka-stream-testkit
     libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % "2.6.3" % Test
   )

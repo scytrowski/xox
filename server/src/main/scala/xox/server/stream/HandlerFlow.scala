@@ -8,10 +8,14 @@ import xox.server.net.{IncomingCommand, OutgoingCommand}
 import xox.server.syntax.akka.stream._
 
 object HandlerFlow {
-  def apply(handler: CommandHandler, initialState: ServerState): Flow[IncomingCommand, OutgoingCommand, NotUsed] =
+  def apply(
+      handler: CommandHandler,
+      initialState: ServerState
+  ): Flow[IncomingCommand, OutgoingCommand, NotUsed] =
     Flow[IncomingCommand]
       .log("Incoming Commands")
       .pureStatefulMapConcat(initialState) { (state, command) =>
         handler.handle(command).run(state).value
-      }.log("Outgoing Commands")
+      }
+      .log("Outgoing Commands")
 }

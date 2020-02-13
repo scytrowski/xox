@@ -8,12 +8,13 @@ sealed abstract class OutgoingCommand {
   final def isAddressedTo(clientId: String): Boolean =
     this match {
       case OutgoingCommand.Private(id, _) if id == clientId => true
-      case OutgoingCommand.Broadcast(_) => true
-      case _ => false
+      case OutgoingCommand.Broadcast(_)                     => true
+      case _                                                => false
     }
 }
 
 object OutgoingCommand {
-  final case class Private(clientId: String, command: ClientCommand) extends OutgoingCommand
+  final case class Private(clientId: String, command: ClientCommand)
+      extends OutgoingCommand
   final case class Broadcast(command: ClientCommand) extends OutgoingCommand
 }

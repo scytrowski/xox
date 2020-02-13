@@ -13,7 +13,10 @@ import xox.core.protocol.ClientCommand._
 import xox.server.config.ProtocolConfig
 import xox.server.fixture.StreamSpec
 
-class EncoderFlowTest extends StreamSpec("EncoderFlowTest") with EitherValues with ScalaFutures {
+class EncoderFlowTest
+    extends StreamSpec("EncoderFlowTest")
+    with EitherValues
+    with ScalaFutures {
   import scodec.codecs._
 
   "EncoderFlow" should {
@@ -26,7 +29,7 @@ class EncoderFlowTest extends StreamSpec("EncoderFlowTest") with EitherValues wi
       val command5 = Error("Something went wrong")
 
       val commands = List(command1, command2, command3, command4, command5)
-      val packets = commands.map(encode)
+      val packets  = commands.map(encode)
 
       Source(commands)
         .via(EncoderFlow(ProtocolConfig(1024)))
@@ -37,7 +40,8 @@ class EncoderFlowTest extends StreamSpec("EncoderFlowTest") with EitherValues wi
   }
 
   def encode(command: ClientCommand): ByteString =
-    encoder.encode(command)
+    encoder
+      .encode(command)
       .toEither
       .map(akkaBytes)
       .right
@@ -46,5 +50,6 @@ class EncoderFlowTest extends StreamSpec("EncoderFlowTest") with EitherValues wi
   private def akkaBytes(scodecBytes: BitVector): ByteString =
     ByteString(scodecBytes.toByteArray)
 
-  private val encoder: Encoder[ClientCommand] = variableSizeBytesLong(uint32, ClientCommandCodec.codec)
+  private val encoder: Encoder[ClientCommand] =
+    variableSizeBytesLong(uint32, ClientCommandCodec.codec)
 }

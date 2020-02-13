@@ -19,9 +19,11 @@ class HandlerFlowTest extends StreamSpec("HandlerFlowTest") with ScalaFutures {
         Private("123", ClientCommand.LoginOk("456")),
         Broadcast(ClientCommand.PlayerLogged("456", "abc"))
       )
-      val flow = HandlerFlow(new TestCommandHandler(outgoing), new TestServerState())
+      val flow =
+        HandlerFlow(new TestCommandHandler(outgoing), new TestServerState())
 
-      Source.single(IncomingCommand("123", ServerCommand.Login("abc")))
+      Source
+        .single(IncomingCommand("123", ServerCommand.Login("abc")))
         .via(flow)
         .runWith(Sink.seq)
         .futureValue must contain theSameElementsInOrderAs outgoing
@@ -29,8 +31,11 @@ class HandlerFlowTest extends StreamSpec("HandlerFlowTest") with ScalaFutures {
 
   }
 
-  private final class TestCommandHandler(outgoing: List[OutgoingCommand]) extends CommandHandler {
-    override def handle(command: IncomingCommand): State[ServerState, List[OutgoingCommand]] =
+  final private class TestCommandHandler(outgoing: List[OutgoingCommand])
+      extends CommandHandler {
+    override def handle(
+        command: IncomingCommand
+    ): State[ServerState, List[OutgoingCommand]] =
       State(_ -> outgoing)
   }
 }
