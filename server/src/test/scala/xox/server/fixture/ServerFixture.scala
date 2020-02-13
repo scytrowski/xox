@@ -1,12 +1,11 @@
 package xox.server.fixture
 
 import akka.stream.scaladsl.Tcp.ServerBinding
-import org.scalatest.concurrent.ScalaFutures
 import xox.server.ServerInitializer
 import xox.server.config.AppConfig
 import xox.server.mock.TestIdGenerator
 
-trait ServerFixture extends ScalaFutures { self: StreamSpec =>
+trait ServerFixture { self: StreamSpec =>
   def withServer[U](config: AppConfig, ids: String*)(
       f: ServerBinding => U
   ): Unit =

@@ -5,16 +5,15 @@ import java.net.InetSocketAddress
 import akka.stream.scaladsl.{Flow, Framing, Sink, Source, Tcp}
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
-import org.scalatest.concurrent.ScalaFutures
 import scodec.bits.BitVector
 import scodec.codecs._
 import xox.core.codecs.{ClientCommandCodec, ServerCommandCodec}
 import xox.core.protocol.{ClientCommand, ServerCommand}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
-trait ClientFixture extends ScalaFutures { self: StreamSpec =>
+trait ClientFixture { self: StreamSpec =>
   def withClient[U](address: InetSocketAddress)(f: TestClient => U): Unit =
     withClients(address, 1)(f compose (_.head))
 
