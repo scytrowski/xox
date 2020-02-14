@@ -4,7 +4,12 @@ import cats.data.State
 import xox.core.game.MatchParameters
 import xox.core.protocol.{ClientCommand, ErrorCause, ServerCommand}
 import xox.server.ServerState
-import xox.server.ServerState.{CreateMatchResult, JoinMatchResult, LoginResult}
+import xox.server.ServerState.{
+  CreateMatchResult,
+  JoinMatchResult,
+  LoginResult,
+  LogoutResult
+}
 import xox.server.net.OutgoingCommand.{Broadcast, Private}
 import xox.server.net.{IncomingCommand, OutgoingCommand}
 import xox.server.util.IdGenerator
@@ -25,7 +30,8 @@ final class CommandHandlerLive(idGenerator: IdGenerator)
       command: IncomingCommand
   ): State[ServerState, List[OutgoingCommand]] =
     command.command match {
-      case Login(nick) => handleLogin(command.clientId, nick)
+      case Login(nick)      => handleLogin(command.clientId, nick)
+      case Logout(playerId) => handleLogout(command.clientId, playerId)
       case CreateMatch(playerId, parameters) =>
         handleCreateMatch(command.clientId, playerId, parameters)
       case JoinMatch(playerId, matchId) =>
@@ -46,6 +52,23 @@ final class CommandHandlerLive(idGenerator: IdGenerator)
           updatedState -> commands
         case LoginResult.AlreadyLogged =>
           state -> error(clientId, PlayerAlreadyLogged(nick))
+      }
+    }
+
+  private def handleLogout(
+      clientId: String,
+      playerId: String
+  ): State[ServerState, List[OutgoingCommand]] =
+    State { state =>
+      state.logout(playerId) match {
+        case LogoutResult.Ok(updatedState) =>
+          val commands = List(
+            Private(clientId, LogoutOk),
+            Broadcast(PlayerLoggedOut(playerId))
+          )
+          updatedState -> commands
+        case LogoutResult.UnknownPlayer =>
+          state -> error(clientId, UnknownPlayer(playerId))
       }
     }
 

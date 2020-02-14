@@ -3,7 +3,12 @@ package xox.server
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import xox.core.game.MatchParameters
-import xox.server.ServerState.{CreateMatchResult, JoinMatchResult, LoginResult}
+import xox.server.ServerState.{
+  CreateMatchResult,
+  JoinMatchResult,
+  LoginResult,
+  LogoutResult
+}
 import xox.server.mock.{TestIdGenerator, TestMatchStateFactory}
 import xox.server.game.{Match, MatchState, Player}
 
@@ -27,6 +32,25 @@ class ServerStateTest extends AnyWordSpec with Matchers {
         val state = createState(players = List(Player("456", "abc", "123")))
 
         state.login("abc", "123") mustBe LoginResult.AlreadyLogged
+      }
+
+    }
+
+    "logout" should {
+
+      "successfully remove requested player" in {
+        val player = Player("456", "abc", "123")
+        val state  = createState(players = List(player))
+
+        state.logout(player.id) mustBe LogoutResult.Ok(
+          state.copy(players = mkPlayers())
+        )
+      }
+
+      "inform requested player is unknown" in {
+        val state = createState()
+
+        state.logout("123") mustBe LogoutResult.UnknownPlayer
       }
 
     }

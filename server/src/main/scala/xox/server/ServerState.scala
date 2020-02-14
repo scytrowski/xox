@@ -1,12 +1,18 @@
 package xox.server
 
 import xox.core.game.{Mark, MatchParameters}
-import xox.server.ServerState.{CreateMatchResult, JoinMatchResult, LoginResult}
+import xox.server.ServerState.{
+  CreateMatchResult,
+  JoinMatchResult,
+  LoginResult,
+  LogoutResult
+}
 import xox.server.game.{Match, MatchStateFactory, Player}
 import xox.server.util.IdGenerator
 
 trait ServerState {
   def login(nick: String, clientId: String): LoginResult
+  def logout(playerId: String): LogoutResult
   def createMatch(
       ownerId: String,
       parameters: MatchParameters
@@ -21,6 +27,13 @@ object ServerState {
     final case class Ok(state: ServerState, playerId: String)
         extends LoginResult
     case object AlreadyLogged extends LoginResult
+  }
+
+  sealed abstract class LogoutResult
+
+  object LogoutResult {
+    final case class Ok(state: ServerState) extends LogoutResult
+    case object UnknownPlayer               extends LogoutResult
   }
 
   sealed abstract class CreateMatchResult
@@ -59,6 +72,15 @@ final case class ServerStateLive(
         LoginResult.Ok(updatedState, playerId)
       case Some(_) =>
         LoginResult.AlreadyLogged
+    }
+
+  def logout(playerId: String): LogoutResult =
+    findPlayerById(playerId) match {
+      case Some(_) =>
+        val updatedState = copy(players - playerId)
+        LogoutResult.Ok(updatedState)
+      case None =>
+        LogoutResult.UnknownPlayer
     }
 
   def createMatch(

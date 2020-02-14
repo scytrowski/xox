@@ -6,8 +6,10 @@ sealed abstract class ClientCommand
 
 object ClientCommand {
   final case class LoginOk(playerId: String) extends ClientCommand
+  case object LogoutOk                       extends ClientCommand
   final case class PlayerLogged(playerId: String, nick: String)
       extends ClientCommand
+  final case class PlayerLoggedOut(playerId: String) extends ClientCommand
   final case class CreateMatchOk(matchId: String, ownerId: String)
       extends ClientCommand
   final case class JoinMatchOk(

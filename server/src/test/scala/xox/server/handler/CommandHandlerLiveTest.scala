@@ -6,7 +6,12 @@ import org.scalatest.{Inside, LoneElement, OptionValues}
 import xox.core.game.{Mark, MatchParameters}
 import xox.core.protocol.ClientCommand.MatchCreated
 import xox.core.protocol.{ClientCommand, ErrorCause, ServerCommand}
-import xox.server.ServerState.{CreateMatchResult, JoinMatchResult, LoginResult}
+import xox.server.ServerState.{
+  CreateMatchResult,
+  JoinMatchResult,
+  LoginResult,
+  LogoutResult
+}
 import xox.server.mock.{TestIdGenerator, TestServerState}
 import xox.server.game.Player
 import xox.server.net.IncomingCommand
@@ -55,6 +60,45 @@ class CommandHandlerLiveTest
         outCommands.loneElement mustBe Private(
           "123",
           ClientCommand.Error(ErrorCause.PlayerAlreadyLogged(player.nick))
+        )
+      }
+
+    }
+
+    "Logout" should {
+
+      "succeed" in {
+        val clientId = "123"
+        val playerId = "456"
+        val handler  = createHandler()
+        val inCommand =
+          IncomingCommand(clientId, ServerCommand.Logout(playerId))
+        val inputState = new TestServerState(
+          logoutResult = LogoutResult.Ok(new TestServerState())
+        )
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands must contain theSameElementsInOrderAs List(
+          Private(clientId, ClientCommand.LogoutOk),
+          Broadcast(ClientCommand.PlayerLoggedOut(playerId))
+        )
+      }
+
+      "inform requested player is unknown" in {
+        val clientId = "123"
+        val playerId = "456"
+        val handler  = createHandler()
+        val inCommand =
+          IncomingCommand(clientId, ServerCommand.Logout(playerId))
+        val inputState =
+          new TestServerState(logoutResult = LogoutResult.UnknownPlayer)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(ErrorCause.UnknownPlayer(playerId))
         )
       }
 
