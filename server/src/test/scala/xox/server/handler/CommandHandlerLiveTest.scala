@@ -5,7 +5,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{Inside, LoneElement, OptionValues}
 import xox.core.game.{Mark, MatchParameters}
 import xox.core.protocol.ClientCommand.MatchCreated
-import xox.core.protocol.{ClientCommand, ServerCommand}
+import xox.core.protocol.{ClientCommand, ErrorCause, ServerCommand}
 import xox.server.ServerState.{CreateMatchResult, JoinMatchResult, LoginResult}
 import xox.server.mock.{TestIdGenerator, TestServerState}
 import xox.server.game.Player
@@ -52,10 +52,10 @@ class CommandHandlerLiveTest
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
 
-        outCommands.loneElement must matchPattern {
-          case Private(clientId, _: ClientCommand.Error)
-              if clientId == player.clientId =>
-        }
+        outCommands.loneElement mustBe Private(
+          "123",
+          ClientCommand.Error(ErrorCause.PlayerAlreadyLogged(player.nick))
+        )
       }
 
     }
@@ -100,9 +100,12 @@ class CommandHandlerLiveTest
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
 
-        outCommands.loneElement must matchPattern {
-          case Private(toId, _: ClientCommand.Error) if toId == clientId =>
-        }
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(
+            ErrorCause.PlayerAlreadyInMatch(playerId, alreadyInId)
+          )
+        )
       }
 
       "inform requesting player is unknown" in {
@@ -118,9 +121,10 @@ class CommandHandlerLiveTest
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
 
-        outCommands.loneElement must matchPattern {
-          case Private(toId, _: ClientCommand.Error) if toId == clientId =>
-        }
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(ErrorCause.UnknownPlayer("456"))
+        )
       }
 
     }
@@ -167,9 +171,10 @@ class CommandHandlerLiveTest
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
 
-        outCommands.loneElement must matchPattern {
-          case Private(toId, _: ClientCommand.Error) if toId == clientId =>
-        }
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(ErrorCause.MatchAlreadyStarted(matchId))
+        )
       }
 
       "inform requesting player is already in some match" in {
@@ -187,9 +192,12 @@ class CommandHandlerLiveTest
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
 
-        outCommands.loneElement must matchPattern {
-          case Private(toId, _: ClientCommand.Error) if toId == clientId =>
-        }
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(
+            ErrorCause.PlayerAlreadyInMatch(opponentId, "345")
+          )
+        )
       }
 
       "inform requesting player is unknown" in {
@@ -206,9 +214,10 @@ class CommandHandlerLiveTest
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
 
-        outCommands.loneElement must matchPattern {
-          case Private(toId, _: ClientCommand.Error) if toId == clientId =>
-        }
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(ErrorCause.UnknownPlayer(opponentId))
+        )
       }
 
       "inform requested match is unknown" in {
@@ -221,13 +230,14 @@ class CommandHandlerLiveTest
           ServerCommand.JoinMatch(opponentId, matchId)
         )
         val inputState =
-          new TestServerState(joinMatchResult = JoinMatchResult.UnknownPlayer)
+          new TestServerState(joinMatchResult = JoinMatchResult.UnknownMatch)
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
 
-        outCommands.loneElement must matchPattern {
-          case Private(toId, _: ClientCommand.Error) if toId == clientId =>
-        }
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(ErrorCause.UnknownMatch(matchId))
+        )
       }
 
     }

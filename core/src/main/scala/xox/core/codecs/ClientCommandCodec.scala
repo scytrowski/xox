@@ -7,6 +7,7 @@ object ClientCommandCodec {
   import ClientCommand._
   import scodec.codecs._
   import CommonCodecs._
+  import ProtocolCodecs._
   import GameCodecs._
 
   lazy val codec: Codec[ClientCommand] = Codec(encoder, decoder)
@@ -63,7 +64,7 @@ object ClientCommandCodec {
     (string16 :: optional(bool, string16)).as[MatchFinished]
   private lazy val matchListCodec = list(matchInfoCodec).as[MatchList]
   private lazy val timeoutCodec   = provide(Timeout)
-  private lazy val errorCodec     = string16.as[Error]
+  private lazy val errorCodec     = errorCauseModelCodec.as[Error]
 
   private def commandCode(command: ClientCommand): Int =
     command match {

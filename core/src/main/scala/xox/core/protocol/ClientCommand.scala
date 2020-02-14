@@ -29,5 +29,9 @@ object ClientCommand {
       extends ClientCommand
   final case class MatchList(matches: List[MatchInfo]) extends ClientCommand
   case object Timeout                                  extends ClientCommand
-  final case class Error(reason: String)               extends ClientCommand
+  final case class Error(causeModel: ErrorCauseModel)  extends ClientCommand
+
+  object Error {
+    def apply(cause: ErrorCause): Error = Error(cause.toModel)
+  }
 }
