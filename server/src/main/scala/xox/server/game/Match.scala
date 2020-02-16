@@ -1,11 +1,12 @@
 package xox.server.game
 
-import xox.core.game.MatchParameters
+import xox.core.game.{MatchInfo, MatchParameters}
 
 sealed abstract class Match {
   def id: String
   def ownerId: String
   def isInvolved(playerId: String): Boolean
+  def toInfo: MatchInfo
 }
 
 object Match {
@@ -15,6 +16,8 @@ object Match {
       parameters: MatchParameters
   ) extends Match {
     override def isInvolved(playerId: String): Boolean = ownerId == playerId
+
+    override def toInfo: MatchInfo = MatchInfo(id, ownerId, None, parameters)
 
     def start(
         opponentId: String
@@ -32,5 +35,8 @@ object Match {
   ) extends Match {
     override def isInvolved(playerId: String): Boolean =
       ownerId == playerId || opponentId == playerId
+
+    override def toInfo: MatchInfo =
+      MatchInfo(id, ownerId, Some(opponentId), state.parameters)
   }
 }

@@ -14,8 +14,8 @@ import xox.server.game.{Match, MatchState, Player}
 
 import scala.util.Random
 
-class ServerStateTest extends AnyWordSpec with Matchers {
-  "ServerState" when {
+class ServerStateLiveTest extends AnyWordSpec with Matchers {
+  "ServerStateLive" when {
 
     "login" should {
 
@@ -51,6 +51,26 @@ class ServerStateTest extends AnyWordSpec with Matchers {
         val state = createState()
 
         state.logout("123") mustBe LogoutResult.UnknownPlayer
+      }
+
+    }
+
+    "matchList" should {
+
+      "return info of all known matches" in {
+        val match1 = Match.WaitingForOpponent("abc", "123", MatchParameters(3))
+        val match2 = Match.Ongoing(
+          "def",
+          "456",
+          "789",
+          MatchState.create(MatchParameters(4))
+        )
+        val state = createState(matches = List(match1, match2))
+
+        state.matchList must contain theSameElementsInOrderAs List(
+          match1,
+          match2
+        ).map(_.toInfo)
       }
 
     }

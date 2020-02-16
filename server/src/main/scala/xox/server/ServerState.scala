@@ -1,6 +1,6 @@
 package xox.server
 
-import xox.core.game.{Mark, MatchParameters}
+import xox.core.game.{Mark, MatchInfo, MatchParameters}
 import xox.server.ServerState.{
   CreateMatchResult,
   JoinMatchResult,
@@ -13,6 +13,7 @@ import xox.server.util.IdGenerator
 trait ServerState {
   def login(nick: String, clientId: String): LoginResult
   def logout(playerId: String): LogoutResult
+  def matchList: List[MatchInfo]
   def createMatch(
       ownerId: String,
       parameters: MatchParameters
@@ -82,6 +83,9 @@ final case class ServerStateLive(
       case None =>
         LogoutResult.UnknownPlayer
     }
+
+  override def matchList: List[MatchInfo] =
+    matches.values.map(_.toInfo).toList
 
   def createMatch(
       ownerId: String,

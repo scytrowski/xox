@@ -9,7 +9,8 @@ object ClientCommand {
   case object LogoutOk                       extends ClientCommand
   final case class PlayerLogged(playerId: String, nick: String)
       extends ClientCommand
-  final case class PlayerLoggedOut(playerId: String) extends ClientCommand
+  final case class PlayerLoggedOut(playerId: String)   extends ClientCommand
+  final case class MatchList(matches: List[MatchInfo]) extends ClientCommand
   final case class CreateMatchOk(matchId: String, ownerId: String)
       extends ClientCommand
   final case class JoinMatchOk(
@@ -29,9 +30,8 @@ object ClientCommand {
   ) extends ClientCommand
   final case class MatchFinished(matchId: String, winnerId: Option[String])
       extends ClientCommand
-  final case class MatchList(matches: List[MatchInfo]) extends ClientCommand
-  case object Timeout                                  extends ClientCommand
-  final case class Error(causeModel: ErrorCauseModel)  extends ClientCommand
+  case object Timeout                                 extends ClientCommand
+  final case class Error(causeModel: ErrorCauseModel) extends ClientCommand
 
   object Error {
     def apply(cause: ErrorCause): Error = Error(cause.toModel)

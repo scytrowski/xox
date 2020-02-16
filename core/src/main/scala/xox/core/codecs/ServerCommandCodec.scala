@@ -24,32 +24,36 @@ object ServerCommandCodec {
     selectedEncoder[ServerCommand](cmd =>
       Err(s"Cannot encode server command: $cmd")
     ) {
-      case _: Login       => loginCodec.upcast
-      case _: Logout      => logoutCodec.upcast
-      case _: CreateMatch => createMatchCodec.upcast
-      case _: JoinMatch   => joinMatchCodec.upcast
+      case _: Login         => loginCodec.upcast
+      case _: Logout        => logoutCodec.upcast
+      case RequestMatchList => requestMatchListCodec.upcast
+      case _: CreateMatch   => createMatchCodec.upcast
+      case _: JoinMatch     => joinMatchCodec.upcast
     }
 
   private def commandDecoder(code: Int): Decoder[ServerCommand] =
     code match {
       case 1       => loginCodec
       case 2       => logoutCodec
-      case 3       => createMatchCodec
-      case 4       => joinMatchCodec
+      case 3       => requestMatchListCodec
+      case 4       => createMatchCodec
+      case 5       => joinMatchCodec
       case unknown => fail(Err(s"Unknown server command code: $unknown"))
     }
 
-  private lazy val loginCodec  = string16.as[Login]
-  private lazy val logoutCodec = string16.as[Logout]
+  private lazy val loginCodec            = string16.as[Login]
+  private lazy val logoutCodec           = string16.as[Logout]
+  private lazy val requestMatchListCodec = provide(RequestMatchList)
   private lazy val createMatchCodec =
     (string16 :: matchParametersCodec).as[CreateMatch]
   private lazy val joinMatchCodec = (string16 :: string16).as[JoinMatch]
 
   private def commandCode(command: ServerCommand): Int =
     command match {
-      case _: Login       => 1
-      case _: Logout      => 2
-      case _: CreateMatch => 3
-      case _: JoinMatch   => 4
+      case _: Login         => 1
+      case _: Logout        => 2
+      case RequestMatchList => 3
+      case _: CreateMatch   => 4
+      case _: JoinMatch     => 5
     }
 }

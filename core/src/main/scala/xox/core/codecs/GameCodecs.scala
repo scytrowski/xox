@@ -21,5 +21,6 @@ object GameCodecs {
   )
   val matchParametersCodec: Codec[MatchParameters] = uint8.as[MatchParameters]
   val matchInfoCodec: Codec[MatchInfo] =
-    (string16 :: optional(bool, string16) :: matchParametersCodec).as[MatchInfo]
+    (string16 :: string16 :: optional(bool, string16) :: matchParametersCodec)
+      .as[MatchInfo]
 }

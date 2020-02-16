@@ -25,16 +25,18 @@ object ClientCommandCodec {
     selectedEncoder[ClientCommand](cmd =>
       Err(s"Cannot encode client command: $cmd")
     ) {
-      case _: LoginOk       => loginOkCodec.upcast
-      case LogoutOk         => logoutOkCodec.upcast
-      case _: PlayerLogged  => playerLoggedCodec.upcast
-      case _: CreateMatchOk => createMatchOkCodec.upcast
-      case _: JoinMatchOk   => joinMatchOkCodec.upcast
-      case _: MatchCreated  => matchCreatedCodec.upcast
-      case _: MatchStarted  => matchStartedCodec.upcast
-      case _: MatchFinished => matchFinishedCodec.upcast
-      case Timeout          => timeoutCodec.upcast
-      case _: Error         => errorCodec.upcast
+      case _: LoginOk         => loginOkCodec.upcast
+      case LogoutOk           => logoutOkCodec.upcast
+      case _: PlayerLogged    => playerLoggedCodec.upcast
+      case _: PlayerLoggedOut => playerLoggedOutCodec.upcast
+      case _: MatchList       => matchListCodec.upcast
+      case _: CreateMatchOk   => createMatchOkCodec.upcast
+      case _: JoinMatchOk     => joinMatchOkCodec.upcast
+      case _: MatchCreated    => matchCreatedCodec.upcast
+      case _: MatchStarted    => matchStartedCodec.upcast
+      case _: MatchFinished   => matchFinishedCodec.upcast
+      case Timeout            => timeoutCodec.upcast
+      case _: Error           => errorCodec.upcast
     }
 
   private def commandDecoder(code: Int): Decoder[ClientCommand] =
@@ -43,12 +45,12 @@ object ClientCommandCodec {
       case 2       => logoutOkCodec
       case 3       => playerLoggedCodec
       case 4       => playerLoggedOutCodec
-      case 5       => createMatchOkCodec
-      case 6       => joinMatchOkCodec
-      case 7       => matchCreatedCodec
-      case 8       => matchStartedCodec
-      case 9       => matchFinishedCodec
-      case 10      => matchListCodec
+      case 5       => matchListCodec
+      case 6       => createMatchOkCodec
+      case 7       => joinMatchOkCodec
+      case 8       => matchCreatedCodec
+      case 9       => matchStartedCodec
+      case 10      => matchFinishedCodec
       case 254     => timeoutCodec
       case 255     => errorCodec
       case unknown => fail(Err(s"Unknown client command code: $unknown"))
@@ -58,6 +60,7 @@ object ClientCommandCodec {
   private lazy val logoutOkCodec        = provide(LogoutOk)
   private lazy val playerLoggedCodec    = (string16 :: string16).as[PlayerLogged]
   private lazy val playerLoggedOutCodec = string16.as[PlayerLoggedOut]
+  private lazy val matchListCodec       = listOfN(uint8, matchInfoCodec).as[MatchList]
   private lazy val createMatchOkCodec   = (string16 :: string16).as[CreateMatchOk]
   private lazy val joinMatchOkCodec =
     (string16 :: string16 :: markCodec).as[JoinMatchOk]
@@ -67,9 +70,8 @@ object ClientCommandCodec {
     (string16 :: string16 :: markCodec).as[MatchStarted]
   private lazy val matchFinishedCodec =
     (string16 :: optional(bool, string16)).as[MatchFinished]
-  private lazy val matchListCodec = list(matchInfoCodec).as[MatchList]
-  private lazy val timeoutCodec   = provide(Timeout)
-  private lazy val errorCodec     = errorCauseModelCodec.as[Error]
+  private lazy val timeoutCodec = provide(Timeout)
+  private lazy val errorCodec   = errorCauseModelCodec.as[Error]
 
   private def commandCode(command: ClientCommand): Int =
     command match {
@@ -77,12 +79,12 @@ object ClientCommandCodec {
       case LogoutOk           => 2
       case _: PlayerLogged    => 3
       case _: PlayerLoggedOut => 4
-      case _: CreateMatchOk   => 5
-      case _: JoinMatchOk     => 6
-      case _: MatchCreated    => 7
-      case _: MatchStarted    => 8
-      case _: MatchFinished   => 9
-      case _: MatchList       => 10
+      case _: MatchList       => 5
+      case _: CreateMatchOk   => 6
+      case _: JoinMatchOk     => 7
+      case _: MatchCreated    => 8
+      case _: MatchStarted    => 9
+      case _: MatchFinished   => 10
       case Timeout            => 254
       case _: Error           => 255
     }
