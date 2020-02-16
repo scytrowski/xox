@@ -31,10 +31,6 @@ object ClientCommand {
   ) extends ClientCommand
   final case class MatchFinished(matchId: String, winnerId: Option[String])
       extends ClientCommand
-  case object Timeout                                 extends ClientCommand
-  final case class Error(causeModel: ErrorCauseModel) extends ClientCommand
-
-  object Error {
-    def apply(cause: ErrorCause): Error = Error(cause.toModel)
-  }
+  case object Timeout                       extends ClientCommand
+  final case class Error(model: ErrorModel) extends ClientCommand
 }

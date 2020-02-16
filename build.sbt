@@ -8,6 +8,8 @@ addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 
 lazy val core = (project in file("core"))
   .settings(
+    // https://mvnrepository.com/artifact/com.beachape/enumeratum
+    libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.15",
     // https://mvnrepository.com/artifact/org.scodec/scodec-core
     libraryDependencies += "org.scodec" %% "scodec-core" % "1.11.4"
   )

@@ -8,10 +8,11 @@ import scodec.Encoder
 import scodec.bits.BitVector
 import xox.core.codecs.ClientCommandCodec
 import xox.core.game.Mark
-import xox.core.protocol.{ClientCommand, ErrorCause}
+import xox.core.protocol.ClientCommand
 import xox.core.protocol.ClientCommand._
 import xox.server.config.ProtocolConfig
 import xox.server.fixture.StreamSpec
+import xox.server.handler.Errors
 
 class EncoderFlowTest
     extends StreamSpec("EncoderFlowTest")
@@ -26,7 +27,7 @@ class EncoderFlowTest
       val command2 = PlayerLogged("123", "abc")
       val command3 = JoinMatchOk("456", "789", Mark.O)
       val command4 = MatchStarted("456", "789", Mark.O)
-      val command5 = Error(ErrorCause.UnknownPlayer("012"))
+      val command5 = Error(Errors.unknownPlayer("012"))
 
       val commands = List(command1, command2, command3, command4, command5)
       val packets  = commands.map(encode)

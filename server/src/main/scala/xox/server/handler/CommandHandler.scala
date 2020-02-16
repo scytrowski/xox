@@ -2,7 +2,7 @@ package xox.server.handler
 
 import cats.data.State
 import xox.core.game.MatchParameters
-import xox.core.protocol.{ClientCommand, ErrorCause, ServerCommand}
+import xox.core.protocol.{ClientCommand, ErrorModel, ServerCommand}
 import xox.server.ServerState
 import xox.server.ServerState.{
   CreateMatchResult,
@@ -23,8 +23,8 @@ trait CommandHandler {
 final class CommandHandlerLive(idGenerator: IdGenerator)
     extends CommandHandler {
   import ClientCommand._
+  import Errors._
   import ServerCommand._
-  import ErrorCause._
 
   override def handle(
       command: IncomingCommand
@@ -62,7 +62,7 @@ final class CommandHandlerLive(idGenerator: IdGenerator)
           )
           updatedState -> commands
         case LoginResult.AlreadyLogged =>
-          state -> error(clientId, PlayerAlreadyLogged(nick))
+          state -> error(clientId, playerAlreadyLogged(nick))
       }
     }
 
@@ -79,7 +79,7 @@ final class CommandHandlerLive(idGenerator: IdGenerator)
           )
           updatedState -> commands
         case LogoutResult.UnknownPlayer =>
-          state -> error(clientId, UnknownPlayer(playerId))
+          state -> error(clientId, unknownPlayer(playerId))
       }
     }
 
@@ -106,9 +106,9 @@ final class CommandHandlerLive(idGenerator: IdGenerator)
           )
           updatedState -> commands
         case CreateMatchResult.AlreadyInMatch(alreadyInId) =>
-          state -> error(clientId, PlayerAlreadyInMatch(playerId, alreadyInId))
+          state -> error(clientId, playerAlreadyInMatch(playerId, alreadyInId))
         case CreateMatchResult.UnknownPlayer =>
-          state -> error(clientId, UnknownPlayer(playerId))
+          state -> error(clientId, unknownPlayer(playerId))
       }
     }
 
@@ -126,19 +126,19 @@ final class CommandHandlerLive(idGenerator: IdGenerator)
           )
           updatedState -> commands
         case JoinMatchResult.AlreadyStarted =>
-          state -> error(clientId, MatchAlreadyStarted(matchId))
+          state -> error(clientId, matchAlreadyStarted(matchId))
         case JoinMatchResult.AlreadyInMatch(alreadyInId) =>
-          state -> error(clientId, PlayerAlreadyInMatch(playerId, alreadyInId))
+          state -> error(clientId, playerAlreadyInMatch(playerId, alreadyInId))
         case JoinMatchResult.UnknownPlayer =>
-          state -> error(clientId, UnknownPlayer(playerId))
+          state -> error(clientId, unknownPlayer(playerId))
         case JoinMatchResult.UnknownMatch =>
-          state -> error(clientId, UnknownMatch(matchId))
+          state -> error(clientId, unknownMatch(matchId))
       }
     }
 
   private def error(
       clientId: String,
-      cause: ErrorCause
+      model: ErrorModel
   ): List[OutgoingCommand] =
-    Private(clientId, Error(cause)) :: Nil
+    Private(clientId, Error(model)) :: Nil
 }

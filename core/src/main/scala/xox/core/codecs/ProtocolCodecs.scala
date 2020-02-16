@@ -1,12 +1,13 @@
 package xox.core.codecs
 
+import xox.core.protocol.{ErrorCause, ErrorModel}
 import scodec.Codec
-import xox.core.protocol.ErrorCauseModel
 
 object ProtocolCodecs {
   import CommonCodecs._
   import scodec.codecs._
 
-  lazy val errorCauseModelCodec: Codec[ErrorCauseModel] =
-    (uint8 :: string16).as[ErrorCauseModel]
+  lazy val errorModelCodec: Codec[ErrorModel] =
+    (errorCauseCodec :: string16).as[ErrorModel]
+  lazy val errorCauseCodec: Codec[ErrorCause] = valueEnumCodec(ErrorCause, byte)
 }

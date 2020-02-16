@@ -1,30 +1,17 @@
 package xox.core.protocol
 
-final case class ErrorCauseModel(code: Int, message: String)
+import enumeratum.values.{ByteEnum, ByteEnumEntry}
 
-sealed abstract class ErrorCause(val code: Int) {
-  def message: String
+import scala.collection.immutable
 
-  final def toModel: ErrorCauseModel = ErrorCauseModel(code, message)
-}
+sealed abstract class ErrorCause(val value: Byte) extends ByteEnumEntry
 
-object ErrorCause {
-  final case class PlayerAlreadyLogged(nick: String) extends ErrorCause(1) {
-    override val message: String =
-      s"Player with nick $nick is already logged in"
-  }
-  final case class PlayerAlreadyInMatch(playerId: String, matchId: String)
-      extends ErrorCause(2) {
-    override val message: String =
-      s"Player with ID $playerId is already in match with ID $matchId"
-  }
-  final case class MatchAlreadyStarted(matchId: String) extends ErrorCause(3) {
-    override val message: String = s"Match with ID $matchId is already started"
-  }
-  final case class UnknownPlayer(playerId: String) extends ErrorCause(4) {
-    override val message: String = s"Player with ID $playerId is unknown"
-  }
-  final case class UnknownMatch(matchId: String) extends ErrorCause(5) {
-    override val message: String = s"Match with ID $matchId is unknown"
-  }
+object ErrorCause extends ByteEnum[ErrorCause] {
+  case object PlayerAlreadyLogged  extends ErrorCause(1)
+  case object PlayerAlreadyInMatch extends ErrorCause(2)
+  case object MatchAlreadyStarted  extends ErrorCause(3)
+  case object UnknownPlayer        extends ErrorCause(4)
+  case object UnknownMatch         extends ErrorCause(5)
+
+  override def values: immutable.IndexedSeq[ErrorCause] = findValues
 }

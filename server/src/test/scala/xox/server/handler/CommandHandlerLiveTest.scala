@@ -5,15 +5,16 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{Inside, LoneElement, OptionValues}
 import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 import xox.core.protocol.ClientCommand.MatchCreated
-import xox.core.protocol.{ClientCommand, ErrorCause, ServerCommand}
+import xox.core.protocol.{ClientCommand, ServerCommand}
 import xox.server.ServerState.{
   CreateMatchResult,
   JoinMatchResult,
   LoginResult,
   LogoutResult
 }
-import xox.server.mock.{TestIdGenerator, TestServerState}
 import xox.server.game.Player
+import xox.server.handler.Errors._
+import xox.server.mock.{TestIdGenerator, TestServerState}
 import xox.server.net.IncomingCommand
 import xox.server.net.OutgoingCommand.{Broadcast, Private}
 
@@ -82,7 +83,7 @@ class CommandHandlerLiveTest
 
         outCommands.loneElement mustBe Private(
           "123",
-          ClientCommand.Error(ErrorCause.PlayerAlreadyLogged(player.nick))
+          ClientCommand.Error(playerAlreadyLogged(player.nick))
         )
       }
 
@@ -121,7 +122,7 @@ class CommandHandlerLiveTest
 
         outCommands.loneElement mustBe Private(
           clientId,
-          ClientCommand.Error(ErrorCause.UnknownPlayer(playerId))
+          ClientCommand.Error(unknownPlayer(playerId))
         )
       }
 
@@ -192,9 +193,7 @@ class CommandHandlerLiveTest
 
         outCommands.loneElement mustBe Private(
           clientId,
-          ClientCommand.Error(
-            ErrorCause.PlayerAlreadyInMatch(playerId, alreadyInId)
-          )
+          ClientCommand.Error(playerAlreadyInMatch(playerId, alreadyInId))
         )
       }
 
@@ -213,7 +212,7 @@ class CommandHandlerLiveTest
 
         outCommands.loneElement mustBe Private(
           clientId,
-          ClientCommand.Error(ErrorCause.UnknownPlayer("456"))
+          ClientCommand.Error(unknownPlayer("456"))
         )
       }
 
@@ -263,7 +262,7 @@ class CommandHandlerLiveTest
 
         outCommands.loneElement mustBe Private(
           clientId,
-          ClientCommand.Error(ErrorCause.MatchAlreadyStarted(matchId))
+          ClientCommand.Error(matchAlreadyStarted(matchId))
         )
       }
 
@@ -285,7 +284,7 @@ class CommandHandlerLiveTest
         outCommands.loneElement mustBe Private(
           clientId,
           ClientCommand.Error(
-            ErrorCause.PlayerAlreadyInMatch(opponentId, "345")
+            playerAlreadyInMatch(opponentId, "345")
           )
         )
       }
@@ -306,7 +305,7 @@ class CommandHandlerLiveTest
 
         outCommands.loneElement mustBe Private(
           clientId,
-          ClientCommand.Error(ErrorCause.UnknownPlayer(opponentId))
+          ClientCommand.Error(unknownPlayer(opponentId))
         )
       }
 
@@ -326,7 +325,7 @@ class CommandHandlerLiveTest
 
         outCommands.loneElement mustBe Private(
           clientId,
-          ClientCommand.Error(ErrorCause.UnknownMatch(matchId))
+          ClientCommand.Error(unknownMatch(matchId))
         )
       }
 

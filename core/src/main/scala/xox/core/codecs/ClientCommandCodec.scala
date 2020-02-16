@@ -75,7 +75,7 @@ object ClientCommandCodec {
   private lazy val matchFinishedCodec =
     (string16 :: optional(bool, string16)).as[MatchFinished]
   private lazy val timeoutCodec = provide(Timeout)
-  private lazy val errorCodec   = errorCauseModelCodec.as[Error]
+  private lazy val errorCodec   = errorModelCodec.as[Error]
 
   private def commandCode(command: ClientCommand): Int =
     command match {
