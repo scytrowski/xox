@@ -1,6 +1,6 @@
 package xox.server.mock
 
-import xox.core.game.{Mark, MatchInfo, MatchParameters}
+import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 import xox.server.ServerState
 import xox.server.ServerState.{
   CreateMatchResult,
@@ -12,6 +12,7 @@ import xox.server.ServerState.{
 import scala.util.Random
 
 class TestServerState(
+    playerListResult: => List[PlayerInfo] = Nil,
     loginResult: => LoginResult =
       LoginResult.Ok(new TestServerState(), Random.nextString(10)),
     logoutResult: => LogoutResult = LogoutResult.Ok(new TestServerState()),
@@ -21,6 +22,8 @@ class TestServerState(
     joinMatchResult: => JoinMatchResult =
       JoinMatchResult.Ok(new TestServerState(), Random.nextString(10), Mark.X)
 ) extends ServerState {
+  override def playerList: List[PlayerInfo] = playerListResult
+
   override def login(nick: String, clientId: String): LoginResult = loginResult
 
   override def logout(playerId: String): LogoutResult = logoutResult

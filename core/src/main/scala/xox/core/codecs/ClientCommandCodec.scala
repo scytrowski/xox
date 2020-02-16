@@ -25,6 +25,7 @@ object ClientCommandCodec {
     selectedEncoder[ClientCommand](cmd =>
       Err(s"Cannot encode client command: $cmd")
     ) {
+      case _: PlayerList      => playerListCodec.upcast
       case _: LoginOk         => loginOkCodec.upcast
       case LogoutOk           => logoutOkCodec.upcast
       case _: PlayerLogged    => playerLoggedCodec.upcast
@@ -41,21 +42,24 @@ object ClientCommandCodec {
 
   private def commandDecoder(code: Int): Decoder[ClientCommand] =
     code match {
-      case 1       => loginOkCodec
-      case 2       => logoutOkCodec
-      case 3       => playerLoggedCodec
-      case 4       => playerLoggedOutCodec
-      case 5       => matchListCodec
-      case 6       => createMatchOkCodec
-      case 7       => joinMatchOkCodec
-      case 8       => matchCreatedCodec
-      case 9       => matchStartedCodec
-      case 10      => matchFinishedCodec
+      case 1       => playerListCodec
+      case 2       => loginOkCodec
+      case 3       => logoutOkCodec
+      case 4       => playerLoggedCodec
+      case 5       => playerLoggedOutCodec
+      case 6       => matchListCodec
+      case 7       => createMatchOkCodec
+      case 8       => joinMatchOkCodec
+      case 9       => matchCreatedCodec
+      case 10      => matchStartedCodec
+      case 11      => matchFinishedCodec
       case 254     => timeoutCodec
       case 255     => errorCodec
       case unknown => fail(Err(s"Unknown client command code: $unknown"))
     }
 
+  private lazy val playerListCodec =
+    listOfN(uint8, playerInfoCodec).as[PlayerList]
   private lazy val loginOkCodec         = string16.as[LoginOk]
   private lazy val logoutOkCodec        = provide(LogoutOk)
   private lazy val playerLoggedCodec    = (string16 :: string16).as[PlayerLogged]
@@ -75,16 +79,17 @@ object ClientCommandCodec {
 
   private def commandCode(command: ClientCommand): Int =
     command match {
-      case _: LoginOk         => 1
-      case LogoutOk           => 2
-      case _: PlayerLogged    => 3
-      case _: PlayerLoggedOut => 4
-      case _: MatchList       => 5
-      case _: CreateMatchOk   => 6
-      case _: JoinMatchOk     => 7
-      case _: MatchCreated    => 8
-      case _: MatchStarted    => 9
-      case _: MatchFinished   => 10
+      case _: PlayerList      => 1
+      case _: LoginOk         => 2
+      case LogoutOk           => 3
+      case _: PlayerLogged    => 4
+      case _: PlayerLoggedOut => 5
+      case _: MatchList       => 6
+      case _: CreateMatchOk   => 7
+      case _: JoinMatchOk     => 8
+      case _: MatchCreated    => 9
+      case _: MatchStarted    => 10
+      case _: MatchFinished   => 11
       case Timeout            => 254
       case _: Error           => 255
     }

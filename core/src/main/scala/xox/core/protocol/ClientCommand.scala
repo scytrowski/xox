@@ -1,12 +1,13 @@
 package xox.core.protocol
 
-import xox.core.game.{Mark, MatchInfo, MatchParameters}
+import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 
 sealed abstract class ClientCommand
 
 object ClientCommand {
-  final case class LoginOk(playerId: String) extends ClientCommand
-  case object LogoutOk                       extends ClientCommand
+  final case class PlayerList(players: List[PlayerInfo]) extends ClientCommand
+  final case class LoginOk(playerId: String)             extends ClientCommand
+  case object LogoutOk                                   extends ClientCommand
   final case class PlayerLogged(playerId: String, nick: String)
       extends ClientCommand
   final case class PlayerLoggedOut(playerId: String)   extends ClientCommand

@@ -3,7 +3,7 @@ package xox.server.handler
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{Inside, LoneElement, OptionValues}
-import xox.core.game.{Mark, MatchInfo, MatchParameters}
+import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 import xox.core.protocol.ClientCommand.MatchCreated
 import xox.core.protocol.{ClientCommand, ErrorCause, ServerCommand}
 import xox.server.ServerState.{
@@ -27,6 +27,29 @@ class CommandHandlerLiveTest
     with Inside {
 
   "CommandHandlerLive" when {
+
+    "RequestPlayerList" should {
+
+      "send list of logged players' info" in {
+        val clientId = "123"
+        val info = List(
+          PlayerInfo("456", "abc"),
+          PlayerInfo("789", "def")
+        )
+        val handler = createHandler()
+        val inCommand =
+          IncomingCommand(clientId, ServerCommand.RequestPlayerList)
+        val inputState = new TestServerState(playerListResult = info)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.PlayerList(info)
+        )
+      }
+
+    }
 
     "Login" should {
 

@@ -5,6 +5,7 @@ import xox.core.game.MatchParameters
 sealed abstract class ServerCommand
 
 object ServerCommand {
+  case object RequestPlayerList             extends ServerCommand
   final case class Login(nick: String)      extends ServerCommand
   final case class Logout(playerId: String) extends ServerCommand
   case object RequestMatchList              extends ServerCommand

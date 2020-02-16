@@ -1,7 +1,7 @@
 package xox.core.codecs
 
 import scodec.{Attempt, Codec, Err}
-import xox.core.game.{Mark, MatchInfo, MatchParameters}
+import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 
 object GameCodecs {
   import CommonCodecs._
@@ -20,6 +20,7 @@ object GameCodecs {
     }
   )
   val matchParametersCodec: Codec[MatchParameters] = uint8.as[MatchParameters]
+  val playerInfoCodec: Codec[PlayerInfo]           = (string16 :: string16).as[PlayerInfo]
   val matchInfoCodec: Codec[MatchInfo] =
     (string16 :: string16 :: optional(bool, string16) :: matchParametersCodec)
       .as[MatchInfo]

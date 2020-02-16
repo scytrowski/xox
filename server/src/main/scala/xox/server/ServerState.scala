@@ -1,6 +1,6 @@
 package xox.server
 
-import xox.core.game.{Mark, MatchInfo, MatchParameters}
+import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 import xox.server.ServerState.{
   CreateMatchResult,
   JoinMatchResult,
@@ -11,6 +11,7 @@ import xox.server.game.{Match, MatchStateFactory, Player}
 import xox.server.util.IdGenerator
 
 trait ServerState {
+  def playerList: List[PlayerInfo]
   def login(nick: String, clientId: String): LoginResult
   def logout(playerId: String): LogoutResult
   def matchList: List[MatchInfo]
@@ -64,6 +65,9 @@ final case class ServerStateLive(
     private val idGenerator: IdGenerator,
     private val matchStateFactory: MatchStateFactory
 ) extends ServerState {
+  override def playerList: List[PlayerInfo] =
+    players.values.map(_.toInfo).toList
+
   def login(nick: String, clientId: String): LoginResult =
     findPlayerByNick(nick) match {
       case None =>

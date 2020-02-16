@@ -30,13 +30,23 @@ final class CommandHandlerLive(idGenerator: IdGenerator)
       command: IncomingCommand
   ): State[ServerState, List[OutgoingCommand]] =
     command.command match {
-      case Login(nick)      => handleLogin(command.clientId, nick)
-      case Logout(playerId) => handleLogout(command.clientId, playerId)
-      case RequestMatchList => handleRequestMatchList(command.clientId)
+      case RequestPlayerList => handleRequestPlayerList(command.clientId)
+      case Login(nick)       => handleLogin(command.clientId, nick)
+      case Logout(playerId)  => handleLogout(command.clientId, playerId)
+      case RequestMatchList  => handleRequestMatchList(command.clientId)
       case CreateMatch(playerId, parameters) =>
         handleCreateMatch(command.clientId, playerId, parameters)
       case JoinMatch(playerId, matchId) =>
         handleJoinMatch(command.clientId, playerId, matchId)
+    }
+
+  private def handleRequestPlayerList(
+      clientId: String
+  ): State[ServerState, List[OutgoingCommand]] =
+    State { state =>
+      val players  = state.playerList
+      val commands = List(Private(clientId, PlayerList(players)))
+      state -> commands
     }
 
   private def handleLogin(

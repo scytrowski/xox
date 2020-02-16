@@ -17,6 +17,21 @@ import scala.util.Random
 class ServerStateLiveTest extends AnyWordSpec with Matchers {
   "ServerStateLive" when {
 
+    "playerList" should {
+
+      "return info of all known players" in {
+        val player1 = Player("456", "abc", "123")
+        val player2 = Player("789", "def", "123")
+        val state   = createState(players = List(player1, player2))
+
+        state.playerList must contain theSameElementsInOrderAs List(
+          player1,
+          player2
+        ).map(_.toInfo)
+      }
+
+    }
+
     "login" should {
 
       "successfully add new player" in {
