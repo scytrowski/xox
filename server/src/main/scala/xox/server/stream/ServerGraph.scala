@@ -24,6 +24,7 @@ object ServerGraph {
             .filter(_.isAddressedTo(client.id))
             .map(_.command)
           Flow[ByteString]
+            .named(s"client-${client.id}-handler")
             .via(decoderFlow)
             .map(IncomingCommand(client.id, _))
             .via(handlerFlow)

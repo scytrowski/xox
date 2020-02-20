@@ -10,4 +10,6 @@ final case class Client(
     id: String,
     address: InetSocketAddress,
     flow: Flow[ByteString, ByteString, NotUsed]
-)
+) {
+  override def toString: String = s"Client($id, $address)"
+}
