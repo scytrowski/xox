@@ -1,0 +1,29 @@
+version: "3.5"
+
+services:
+  server:
+    container_name: "xox-server"
+    image: ${SERVER_IMAGE}
+    environment:
+      - JAVA_OPTS=-Dconfig.file=/opt/app/config/docker-application.conf
+      - HOST=${SERVER_IP}
+      - PORT=${SERVER_PORT}
+    volumes:
+      - ./config/server/:/opt/app/config/
+    expose:
+      - ${SERVER_PORT}
+    networks:
+      xox-network:
+        ipv4_address: ${SERVER_IP}
+
+
+networks:
+  xox-network:
+    name: "xox-network"
+    driver: "bridge"
+    driver_opts:
+      com.docker.network.bridge.name: "xox-network"
+    ipam:
+      driver: "default"
+      config:
+        - subnet: 4.16.32.0/24

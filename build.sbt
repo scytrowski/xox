@@ -43,6 +43,13 @@ lazy val server = (project in file("server"))
     // https://mvnrepository.com/artifact/com.typesafe.akka/akka-stream-testkit
     libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % "2.6.3" % Test
   )
+  .settings(
+    Docker / name := "xox-server",
+    Docker / packageName := "xox-server",
+    Docker / defaultLinuxInstallLocation := "/opt/app",
+    Docker / defaultLinuxLogsLocation := "/opt/app/logs"
+  )
+  .enablePlugins(JavaAppPackaging)
 
 lazy val api = (project in file("api"))
   .dependsOn(core)
