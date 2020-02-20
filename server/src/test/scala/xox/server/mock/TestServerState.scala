@@ -6,7 +6,8 @@ import xox.server.ServerState.{
   CreateMatchResult,
   JoinMatchResult,
   LoginResult,
-  LogoutResult
+  LogoutResult,
+  MakeTurnResult
 }
 
 import scala.util.Random
@@ -19,8 +20,18 @@ class TestServerState(
     matchListResult: => List[MatchInfo] = Nil,
     createMatchResult: => CreateMatchResult =
       CreateMatchResult.Ok(new TestServerState(), Random.nextString(10)),
-    joinMatchResult: => JoinMatchResult =
-      JoinMatchResult.Ok(new TestServerState(), Random.nextString(10), Mark.X)
+    joinMatchResult: => JoinMatchResult = JoinMatchResult.Ok(
+      new TestServerState(),
+      Random.nextString(10),
+      Mark.X,
+      Mark.O
+    ),
+    makeTurnResult: => MakeTurnResult = MakeTurnResult.Ok(
+      new TestServerState(),
+      1,
+      Random.nextString(10),
+      Random.nextString(10)
+    )
 ) extends ServerState {
   override def playerList: List[PlayerInfo] = playerListResult
 
@@ -37,4 +48,10 @@ class TestServerState(
 
   override def joinMatch(matchId: String, playerId: String): JoinMatchResult =
     joinMatchResult
+
+  override def makeTurn(
+      playerId: String,
+      x: Int,
+      y: Int
+  ): ServerState.MakeTurnResult = makeTurnResult
 }

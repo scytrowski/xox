@@ -2,14 +2,16 @@ package xox.server
 
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import xox.core.game.MatchParameters
+import xox.core.game.{Mark, MatchParameters}
 import xox.server.ServerState.{
   CreateMatchResult,
   JoinMatchResult,
   LoginResult,
-  LogoutResult
+  LogoutResult,
+  MakeTurnResult
 }
-import xox.server.mock.{TestIdGenerator, TestMatchStateFactory}
+import xox.server.game.BoardLike.SetResult
+import xox.server.mock.{TestBoardLike, TestIdGenerator, TestMatchStateFactory}
 import xox.server.game.{Match, MatchState, Player}
 
 import scala.util.Random
@@ -146,7 +148,8 @@ class ServerStateLiveTest extends AnyWordSpec with Matchers {
             mkMatches(notStartedMatch.start(opponent.id)(_ => matchState))
           ),
           owner.id,
-          matchState.ownerMark
+          matchState.ownerMark,
+          matchState.turnMark
         )
       }
 
@@ -204,6 +207,185 @@ class ServerStateLiveTest extends AnyWordSpec with Matchers {
 
         state.joinMatch("012", "789") mustBe JoinMatchResult.UnknownMatch
       }
+
+    }
+
+    "makeTurn" should {
+
+      "succeed" in {
+        val clientId     = "123"
+        val ownerId      = "456"
+        val opponentId   = "789"
+        val matchId      = "012"
+        val fieldsLeft   = 5
+        val updatedBoard = new TestBoardLike(freeLeftResult = fieldsLeft)
+        val matchState = MatchState(
+          MatchParameters(4),
+          Mark.X,
+          Mark.X,
+          new TestBoardLike(setResult = SetResult.Ok(updatedBoard))
+        )
+        val m = Match.Ongoing(matchId, ownerId, opponentId, matchState)
+        val expectedMatch = m.copy(state = matchState
+          .copy(board = updatedBoard, turnMark = matchState.turnMark.opposite)
+        )
+        val state = createState(
+          players = List(
+            Player(ownerId, "abc", clientId),
+            Player(opponentId, "def", clientId)
+          ),
+          matches = List(m)
+        )
+
+        state.makeTurn(ownerId, 1, 2) mustBe MakeTurnResult.Ok(
+          state.copy(matches = mkMatches(expectedMatch)),
+          fieldsLeft,
+          matchId,
+          clientId
+        )
+      }
+
+      "inform outcome is a victory" in {
+        val clientId   = "123"
+        val ownerId    = "456"
+        val opponentId = "789"
+        val matchId    = "012"
+        val state = createState(
+          players = List(
+            Player(ownerId, "abc", clientId),
+            Player(opponentId, "def", clientId)
+          ),
+          matches = List(
+            Match.Ongoing(
+              matchId,
+              ownerId,
+              opponentId,
+              MatchState(
+                MatchParameters(4),
+                Mark.X,
+                Mark.X,
+                new TestBoardLike(setResult = SetResult.Victory)
+              )
+            )
+          )
+        )
+
+        state.makeTurn(ownerId, 1, 2) mustBe MakeTurnResult.Victory(
+          state.copy(matches = mkMatches()),
+          matchId,
+          clientId
+        )
+      }
+
+      "inform outcome is a draw" in {
+        val clientId   = "123"
+        val ownerId    = "456"
+        val opponentId = "789"
+        val matchId    = "012"
+        val state = createState(
+          players = List(
+            Player(ownerId, "abc", clientId),
+            Player(opponentId, "def", clientId)
+          ),
+          matches = List(
+            Match.Ongoing(
+              matchId,
+              ownerId,
+              opponentId,
+              MatchState(
+                MatchParameters(4),
+                Mark.X,
+                Mark.X,
+                new TestBoardLike(setResult = SetResult.Draw)
+              )
+            )
+          )
+        )
+
+        state.makeTurn(ownerId, 1, 2) mustBe MakeTurnResult.Draw(
+          state.copy(matches = mkMatches()),
+          matchId,
+          clientId
+        )
+      }
+
+      "inform requested incorrect field" in {
+        val ownerId    = "456"
+        val opponentId = "789"
+        val state = createState(
+          players = List(
+            Player(ownerId, "abc", "123"),
+            Player(opponentId, "def", "123")
+          ),
+          matches = List(
+            Match.Ongoing(
+              "012",
+              ownerId,
+              opponentId,
+              MatchState(
+                MatchParameters(4),
+                Mark.X,
+                Mark.X,
+                new TestBoardLike(setResult = SetResult.OutOfBounds)
+              )
+            )
+          )
+        )
+
+        state.makeTurn(ownerId, 1, 2) mustBe MakeTurnResult.IncorrectField
+      }
+
+      "inform not your turn" in {
+        val ownerId    = "456"
+        val opponentId = "789"
+        val state = createState(
+          players = List(
+            Player(ownerId, "abc", "123"),
+            Player(opponentId, "def", "123")
+          ),
+          matches = List(
+            Match.Ongoing(
+              "012",
+              ownerId,
+              opponentId,
+              MatchState(
+                MatchParameters(4),
+                Mark.X,
+                Mark.O,
+                new TestBoardLike()
+              )
+            )
+          )
+        )
+
+        state.makeTurn(ownerId, 1, 2) mustBe MakeTurnResult.NotYourTurn
+      }
+
+      "inform requested match has not been started yet" in {
+        val playerId = "456"
+        val state = createState(
+          players = List(Player(playerId, "abc", "123")),
+          matches =
+            List(Match.WaitingForOpponent("789", playerId, MatchParameters(4)))
+        )
+
+        state.makeTurn(playerId, 1, 2) mustBe MakeTurnResult.MatchNotStarted
+      }
+
+      "inform requesting player is not in any match" in {
+        val playerId = "456"
+        val state    = createState(players = List(Player(playerId, "abc", "123")))
+
+        state.makeTurn("456", 1, 2) mustBe MakeTurnResult.NotInMatch
+      }
+
+      "inform requesting player is unknown" in {
+        val state = createState()
+
+        state.makeTurn("123", 1, 2) mustBe MakeTurnResult.UnknownPlayer
+      }
+
+      "inform opponent in requested match is missing" in {}
 
     }
 

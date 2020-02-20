@@ -5,8 +5,10 @@ import xox.server.ServerState.{
   CreateMatchResult,
   JoinMatchResult,
   LoginResult,
-  LogoutResult
+  LogoutResult,
+  MakeTurnResult
 }
+import xox.server.game.MatchState.PutMarkResult
 import xox.server.game.{Match, MatchStateFactory, Player}
 import xox.server.util.IdGenerator
 
@@ -20,6 +22,7 @@ trait ServerState {
       parameters: MatchParameters
   ): CreateMatchResult
   def joinMatch(matchId: String, playerId: String): JoinMatchResult
+  def makeTurn(playerId: String, x: Int, y: Int): MakeTurnResult
 }
 
 object ServerState {
@@ -50,12 +53,43 @@ object ServerState {
   sealed abstract class JoinMatchResult
 
   object JoinMatchResult {
-    final case class Ok(state: ServerState, ownerId: String, ownerMark: Mark)
-        extends JoinMatchResult
+    final case class Ok(
+        state: ServerState,
+        ownerId: String,
+        ownerMark: Mark,
+        turnMark: Mark
+    ) extends JoinMatchResult
     case object AlreadyStarted                       extends JoinMatchResult
     final case class AlreadyInMatch(matchId: String) extends JoinMatchResult
     case object UnknownPlayer                        extends JoinMatchResult
     case object UnknownMatch                         extends JoinMatchResult
+  }
+
+  sealed abstract class MakeTurnResult
+
+  object MakeTurnResult {
+    final case class Ok(
+        state: ServerState,
+        fieldsLeft: Int,
+        matchId: String,
+        opponentClientId: String
+    ) extends MakeTurnResult
+    final case class Victory(
+        state: ServerState,
+        matchId: String,
+        opponentClientId: String
+    ) extends MakeTurnResult
+    final case class Draw(
+        state: ServerState,
+        matchId: String,
+        opponentClientId: String
+    ) extends MakeTurnResult
+    case object IncorrectField  extends MakeTurnResult
+    case object NotYourTurn     extends MakeTurnResult
+    case object MatchNotStarted extends MakeTurnResult
+    case object NotInMatch      extends MakeTurnResult
+    case object UnknownPlayer   extends MakeTurnResult
+    case object MissingOpponent extends MakeTurnResult
   }
 }
 
@@ -120,7 +154,8 @@ final case class ServerStateLive(
         JoinMatchResult.Ok(
           updatedState,
           startedMatch.ownerId,
-          startedMatch.state.ownerMark
+          startedMatch.state.ownerMark,
+          startedMatch.state.turnMark
         )
       case (Some(_), Some(_: Match.Ongoing), None) =>
         JoinMatchResult.AlreadyStarted
@@ -130,6 +165,46 @@ final case class ServerStateLive(
         JoinMatchResult.UnknownPlayer
       case (_, None, _) =>
         JoinMatchResult.UnknownMatch
+    }
+
+  def makeTurn(playerId: String, x: Int, y: Int): MakeTurnResult =
+    (
+      findPlayerById(playerId),
+      findMatchByPlayerId(playerId)
+    ) match {
+      case (Some(_), Some(m: Match.Ongoing)) =>
+        val (opponentId, mark) =
+          if (playerId == m.ownerId)
+            m.opponentId -> m.state.ownerMark
+          else
+            m.ownerId -> m.state.opponentMark
+        findPlayerById(opponentId)
+          .fold[MakeTurnResult](MakeTurnResult.MissingOpponent) { opponent =>
+            m.state.putMark(x, y, mark) match {
+              case PutMarkResult.Ok(updatedMatchState, fieldsLeft) =>
+                val updatedMatch = m.copy(state = updatedMatchState)
+                val updatedState =
+                  copy(matches = matches.updated(m.id, updatedMatch))
+                MakeTurnResult.Ok(
+                  updatedState,
+                  fieldsLeft,
+                  m.id,
+                  opponent.clientId
+                )
+              case PutMarkResult.Victory =>
+                val updatedState = copy(matches = matches - m.id)
+                MakeTurnResult.Victory(updatedState, m.id, opponent.clientId)
+              case PutMarkResult.Draw =>
+                val updatedState = copy(matches = matches - m.id)
+                MakeTurnResult.Draw(updatedState, m.id, opponent.clientId)
+              case PutMarkResult.IncorrectField => MakeTurnResult.IncorrectField
+              case PutMarkResult.NotYourTurn    => MakeTurnResult.NotYourTurn
+            }
+          }
+      case (Some(_), Some(_: Match.WaitingForOpponent)) =>
+        MakeTurnResult.MatchNotStarted
+      case (None, _) => MakeTurnResult.UnknownPlayer
+      case (_, None) => MakeTurnResult.NotInMatch
     }
 
   private def findPlayerById(id: String): Option[Player] = players.get(id)

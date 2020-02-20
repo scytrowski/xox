@@ -36,7 +36,6 @@ object ClientCommandCodec {
       case _: MatchCreated    => matchCreatedCodec.upcast
       case _: MatchStarted    => matchStartedCodec.upcast
       case _: MatchFinished   => matchFinishedCodec.upcast
-      case Timeout            => timeoutCodec.upcast
       case _: Error           => errorCodec.upcast
     }
 
@@ -53,7 +52,11 @@ object ClientCommandCodec {
       case 9       => matchCreatedCodec
       case 10      => matchStartedCodec
       case 11      => matchFinishedCodec
-      case 254     => timeoutCodec
+      case 12      => makeTurnOkCodec
+      case 13      => turnMadeCodec
+      case 14      => matchWonCodec
+      case 15      => matchLostCodec
+      case 16      => matchDrawCodec
       case 255     => errorCodec
       case unknown => fail(Err(s"Unknown client command code: $unknown"))
     }
@@ -67,15 +70,24 @@ object ClientCommandCodec {
   private lazy val matchListCodec       = listOfN(uint8, matchInfoCodec).as[MatchList]
   private lazy val createMatchOkCodec   = (string16 :: string16).as[CreateMatchOk]
   private lazy val joinMatchOkCodec =
-    (string16 :: string16 :: markCodec).as[JoinMatchOk]
+    (string16 :: string16 :: markCodec :: markCodec).as[JoinMatchOk]
   private lazy val matchCreatedCodec =
     (string16 :: string16 :: matchParametersCodec).as[MatchCreated]
   private lazy val matchStartedCodec =
-    (string16 :: string16 :: markCodec).as[MatchStarted]
+    (string16 :: string16 :: markCodec :: markCodec).as[MatchStarted]
   private lazy val matchFinishedCodec =
     (string16 :: optional(bool, string16)).as[MatchFinished]
-  private lazy val timeoutCodec = provide(Timeout)
-  private lazy val errorCodec   = errorModelCodec.as[Error]
+  private lazy val makeTurnOkCodec =
+    uint16.as[MakeTurnOk]
+  private lazy val turnMadeCodec =
+    (string16 :: uint8 :: uint8).as[TurnMade]
+  private lazy val matchWonCodec =
+    (string16 :: string16).as[MatchWon]
+  private lazy val matchLostCodec =
+    string16.as[MatchLost]
+  private lazy val matchDrawCodec =
+    string16.as[MatchDrawn]
+  private lazy val errorCodec = errorModelCodec.as[Error]
 
   private def commandCode(command: ClientCommand): Int =
     command match {
@@ -90,7 +102,11 @@ object ClientCommandCodec {
       case _: MatchCreated    => 9
       case _: MatchStarted    => 10
       case _: MatchFinished   => 11
-      case Timeout            => 254
+      case _: MakeTurnOk      => 12
+      case _: TurnMade        => 13
+      case _: MatchWon        => 14
+      case _: MatchLost       => 15
+      case _: MatchDrawn      => 16
       case _: Error           => 255
     }
 }

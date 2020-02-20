@@ -1,6 +1,6 @@
 package xox.server.game
 
-import xox.core.game.{MatchInfo, MatchParameters}
+import xox.core.game.{Mark, MatchInfo, MatchParameters}
 
 sealed abstract class Match {
   def id: String

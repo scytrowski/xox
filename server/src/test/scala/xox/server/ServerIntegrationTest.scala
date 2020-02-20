@@ -155,11 +155,16 @@ class ServerIntegrationTest
       client: TestClient,
       matchId: String,
       opponentId: String
-  ): Mark =
+  ): (Mark, Mark) =
     inside(client.receiveN(2)) {
-      case JoinMatchOk(mId1, oId1, _) :: MatchStarted(mId2, oId2, mark) :: Nil
+      case JoinMatchOk(mId1, oId1, _, _) :: MatchStarted(
+            mId2,
+            oId2,
+            ownerMark,
+            turnMark
+          ) :: Nil
           if mId1 == matchId && oId1 == opponentId && mId2 == matchId && oId2 == opponentId =>
-        mark
+        ownerMark -> turnMark
     }
 
   private def randomStrings(count: Int, length: Int = 10) =

@@ -30,6 +30,7 @@ object ServerCommandCodec {
       case RequestMatchList  => requestMatchListCodec.upcast
       case _: CreateMatch    => createMatchCodec.upcast
       case _: JoinMatch      => joinMatchCodec.upcast
+      case _: MakeTurn       => makeTurnCodec.upcast
     }
 
   private def commandDecoder(code: Int): Decoder[ServerCommand] =
@@ -40,6 +41,7 @@ object ServerCommandCodec {
       case 4       => requestMatchListCodec
       case 5       => createMatchCodec
       case 6       => joinMatchCodec
+      case 7       => makeTurnCodec
       case unknown => fail(Err(s"Unknown server command code: $unknown"))
     }
 
@@ -50,6 +52,7 @@ object ServerCommandCodec {
   private lazy val createMatchCodec =
     (string16 :: matchParametersCodec).as[CreateMatch]
   private lazy val joinMatchCodec = (string16 :: string16).as[JoinMatch]
+  private lazy val makeTurnCodec  = (string16 :: uint8 :: uint8).as[MakeTurn]
 
   private def commandCode(command: ServerCommand): Int =
     command match {
@@ -59,5 +62,6 @@ object ServerCommandCodec {
       case RequestMatchList  => 4
       case _: CreateMatch    => 5
       case _: JoinMatch      => 6
+      case _: MakeTurn       => 7
     }
 }

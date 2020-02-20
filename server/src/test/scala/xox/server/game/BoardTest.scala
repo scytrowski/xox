@@ -1,11 +1,16 @@
 package xox.server.game
 
-import org.scalatest.OptionValues
+import org.scalatest.{Inside, OptionValues}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import xox.core.game.Mark
+import xox.server.game.BoardLike.SetResult
 
-class BoardTest extends AnyWordSpec with Matchers with OptionValues {
+class BoardTest
+    extends AnyWordSpec
+    with Matchers
+    with OptionValues
+    with Inside {
   "Board" when {
 
     "get" should {
@@ -107,5 +112,23 @@ class BoardTest extends AnyWordSpec with Matchers with OptionValues {
 
     }
 
+  }
+
+  implicit private class SetResultAsBoardLike(setResult: SetResult)
+      extends BoardLike {
+    override def get(x: Int, y: Int): Option[Field] =
+      okOrElse(None, _.get(x, y))
+
+    override def set(x: Int, y: Int, mark: Mark): SetResult =
+      okOrElse(setResult, _.set(x, y, mark))
+
+    override def freeLeft: Int =
+      okOrElse(0, _.freeLeft)
+
+    private def okOrElse[A](orElse: => A, f: BoardLike => A): A =
+      setResult match {
+        case SetResult.Ok(board) => f(board)
+        case _                   => orElse
+      }
   }
 }

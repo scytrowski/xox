@@ -25,8 +25,8 @@ class EncoderFlowTest
     "encode client commands" in {
       val command1 = LoginOk("123")
       val command2 = PlayerLogged("123", "abc")
-      val command3 = JoinMatchOk("456", "789", Mark.O)
-      val command4 = MatchStarted("456", "789", Mark.O)
+      val command3 = JoinMatchOk("456", "789", Mark.O, Mark.X)
+      val command4 = MatchStarted("456", "789", Mark.O, Mark.X)
       val command5 = Error(Errors.unknownPlayer("012"))
 
       val commands = List(command1, command2, command3, command4, command5)

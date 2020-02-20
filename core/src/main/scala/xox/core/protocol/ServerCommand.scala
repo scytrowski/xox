@@ -13,4 +13,6 @@ object ServerCommand {
       extends ServerCommand
   final case class JoinMatch(playerId: String, matchId: String)
       extends ServerCommand
+  final case class MakeTurn(playerId: String, x: Int, y: Int)
+      extends ServerCommand
 }

@@ -1,39 +1,33 @@
 package xox.server.game
 
 import xox.core.game.Mark
+import xox.server.game.BoardLike.SetResult
 import xox.server.game.Field.Empty
 
 trait BoardLike {
   def get(x: Int, y: Int): Option[Field]
 
   def set(x: Int, y: Int, mark: Mark): SetResult
+
+  def freeLeft: Int
 }
 
-sealed abstract class SetResult extends BoardLike {
-  override def get(x: Int, y: Int): Option[Field] =
-    Some(this).collect {
-      case SetResult.Ok(updatedBoard) => updatedBoard.get(x, y)
-    }.flatten
+object BoardLike {
+  sealed abstract class SetResult
 
-  override def set(x: Int, y: Int, mark: Mark): SetResult =
-    this match {
-      case SetResult.Ok(updatedBoard) => updatedBoard.set(x, y, mark)
-      case other                      => other
-    }
-}
-
-object SetResult {
-  final case class Ok(updatedBoard: Board) extends SetResult
-  case object Victory                      extends SetResult
-  case object Draw                         extends SetResult
-  case object AlreadyTaken                 extends SetResult
-  case object OutOfBounds                  extends SetResult
+  object SetResult {
+    final case class Ok(updatedBoard: BoardLike) extends SetResult
+    case object Victory                          extends SetResult
+    case object Draw                             extends SetResult
+    case object AlreadyTaken                     extends SetResult
+    case object OutOfBounds                      extends SetResult
+  }
 }
 
 final case class Board private (
     size: Int,
-    private val fields: List[Field],
-    private val free: Int
+    freeLeft: Int,
+    private val fields: List[Field]
 ) extends BoardLike {
   override def get(x: Int, y: Int): Option[Field] =
     Some(x -> y)
@@ -46,11 +40,11 @@ final case class Board private (
       case Some(Empty) =>
         if (checkIfWin(x, y, mark))
           SetResult.Victory
-        else if (free <= 1) {
+        else if (freeLeft <= 1) {
           SetResult.Draw
         } else {
           val updatedFields = fields.updated(index(x, y), Field.Taken(mark))
-          SetResult.Ok(copy(fields = updatedFields, free = free - 1))
+          SetResult.Ok(copy(fields = updatedFields, freeLeft = freeLeft - 1))
         }
       case Some(_) => SetResult.AlreadyTaken
       case None    => SetResult.OutOfBounds
@@ -103,6 +97,6 @@ object Board {
   def create(size: Int): Board = {
     val free   = size * size
     val fields = List.fill[Field](free)(Field.Empty)
-    new Board(size, fields, free)
+    new Board(size, free, fields)
   }
 }

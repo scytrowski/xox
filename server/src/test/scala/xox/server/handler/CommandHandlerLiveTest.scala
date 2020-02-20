@@ -1,17 +1,11 @@
 package xox.server.handler
 
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{Inside, LoneElement, OptionValues}
 import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 import xox.core.protocol.ClientCommand.MatchCreated
 import xox.core.protocol.{ClientCommand, ServerCommand}
-import xox.server.ServerState.{
-  CreateMatchResult,
-  JoinMatchResult,
-  LoginResult,
-  LogoutResult
-}
+import xox.server.ServerState._
+import xox.server.fixture.CommonSpec
 import xox.server.game.Player
 import xox.server.handler.Errors._
 import xox.server.mock.{TestIdGenerator, TestServerState}
@@ -21,8 +15,7 @@ import xox.server.net.OutgoingCommand.{Broadcast, Private}
 import scala.util.Random
 
 class CommandHandlerLiveTest
-    extends AnyWordSpec
-    with Matchers
+    extends CommonSpec
     with OptionValues
     with LoneElement
     with Inside {
@@ -232,7 +225,7 @@ class CommandHandlerLiveTest
         )
         val inputState = new TestServerState(
           joinMatchResult =
-            JoinMatchResult.Ok(new TestServerState(), ownerId, Mark.X)
+            JoinMatchResult.Ok(new TestServerState(), ownerId, Mark.X, Mark.O)
         )
 
         val (_, outCommands) = handler.handle(inCommand).run(inputState).value
@@ -240,9 +233,11 @@ class CommandHandlerLiveTest
         outCommands must contain theSameElementsInOrderAs List(
           Private(
             clientId,
-            ClientCommand.JoinMatchOk(matchId, opponentId, Mark.X)
+            ClientCommand.JoinMatchOk(matchId, opponentId, Mark.X, Mark.O)
           ),
-          Broadcast(ClientCommand.MatchStarted(matchId, opponentId, Mark.X))
+          Broadcast(
+            ClientCommand.MatchStarted(matchId, opponentId, Mark.X, Mark.O)
+          )
         )
       }
 
@@ -326,6 +321,194 @@ class CommandHandlerLiveTest
         outCommands.loneElement mustBe Private(
           clientId,
           ClientCommand.Error(unknownMatch(matchId))
+        )
+      }
+
+    }
+
+    "MakeTurn" should {
+
+      "succeed" in {
+        val clientId         = "123"
+        val opponentClientId = "456"
+        val playerId         = "789"
+        val matchId          = "012"
+        val handler          = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn(playerId, 1, 2)
+        )
+        val inputState = new TestServerState(
+          makeTurnResult = MakeTurnResult
+            .Ok(new TestServerState(), 5, matchId, opponentClientId)
+        )
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands must contain theSameElementsInOrderAs List(
+          Private(clientId, ClientCommand.MakeTurnOk(5)),
+          Private(opponentClientId, ClientCommand.TurnMade(matchId, 1, 2))
+        )
+      }
+
+      "inform outcome is a victory" in {
+        val clientId         = "123"
+        val opponentClientId = "456"
+        val playerId         = "789"
+        val matchId          = "012"
+        val handler          = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn(playerId, 1, 2)
+        )
+        val inputState = new TestServerState(
+          makeTurnResult = MakeTurnResult
+            .Victory(new TestServerState(), matchId, opponentClientId)
+        )
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands must contain theSameElementsInOrderAs List(
+          Private(clientId, ClientCommand.MakeTurnOk(0)),
+          Private(clientId, ClientCommand.MatchWon(matchId, playerId)),
+          Private(opponentClientId, ClientCommand.MatchLost(matchId)),
+          Broadcast(ClientCommand.MatchFinished(matchId, Some(playerId)))
+        )
+      }
+
+      "inform outcome is a draw" in {
+        val clientId         = "123"
+        val opponentClientId = "456"
+        val playerId         = "789"
+        val matchId          = "012"
+        val handler          = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn(playerId, 1, 2)
+        )
+        val inputState = new TestServerState(
+          makeTurnResult = MakeTurnResult
+            .Draw(new TestServerState(), matchId, opponentClientId)
+        )
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands must contain theSameElementsInOrderAs List(
+          Private(clientId, ClientCommand.MakeTurnOk(0)),
+          Private(clientId, ClientCommand.MatchDrawn(matchId)),
+          Private(opponentClientId, ClientCommand.MatchDrawn(matchId)),
+          Broadcast(ClientCommand.MatchFinished(matchId, None))
+        )
+      }
+
+      "inform requested incorrect field" in {
+        val clientId = "123"
+        val handler  = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn("456", 1, 2)
+        )
+        val inputState =
+          new TestServerState(makeTurnResult = MakeTurnResult.IncorrectField)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(Errors.incorrectField(1, 2))
+        )
+      }
+
+      "inform not your turn" in {
+        val clientId = "123"
+        val playerId = "456"
+        val handler  = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn(playerId, 1, 2)
+        )
+        val inputState =
+          new TestServerState(makeTurnResult = MakeTurnResult.NotYourTurn)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(Errors.notYourTurn(playerId))
+        )
+      }
+
+      "inform requested match has not been started yet" in {
+        val clientId = "123"
+        val handler  = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn("456", 1, 2)
+        )
+        val inputState =
+          new TestServerState(makeTurnResult = MakeTurnResult.MatchNotStarted)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(Errors.matchNotStarted)
+        )
+      }
+
+      "inform requesting player is not in any match" in {
+        val clientId = "123"
+        val playerId = "456"
+        val handler  = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn(playerId, 1, 2)
+        )
+        val inputState =
+          new TestServerState(makeTurnResult = MakeTurnResult.NotInMatch)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(Errors.notInMatch(playerId))
+        )
+      }
+
+      "inform requesting player is unknown" in {
+        val clientId = "123"
+        val playerId = "456"
+        val handler  = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn(playerId, 1, 2)
+        )
+        val inputState =
+          new TestServerState(makeTurnResult = MakeTurnResult.UnknownPlayer)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(Errors.unknownPlayer(playerId))
+        )
+      }
+
+      "inform opponent in requested match is missing" in {
+        val clientId = "123"
+        val handler  = createHandler()
+        val inCommand = IncomingCommand(
+          clientId,
+          ServerCommand.MakeTurn("456", 1, 2)
+        )
+        val inputState =
+          new TestServerState(makeTurnResult = MakeTurnResult.MissingOpponent)
+
+        val (_, outCommands) = handler.handle(inCommand).run(inputState).value
+
+        outCommands.loneElement mustBe Private(
+          clientId,
+          ClientCommand.Error(Errors.missingOpponent)
         )
       }
 

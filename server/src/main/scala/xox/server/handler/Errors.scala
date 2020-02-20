@@ -23,6 +23,36 @@ object Errors {
       s"Match with ID $matchId is already started"
     )
 
+  def incorrectField(x: Int, y: Int): ErrorModel =
+    ErrorModel(
+      IncorrectField,
+      s"Field at (x=$x, y=$y) is not valid for the requested match"
+    )
+
+  def notYourTurn(playerId: String): ErrorModel =
+    ErrorModel(
+      NotYourTurn,
+      s"Player with ID $playerId is not making his turn right now"
+    )
+
+  val matchNotStarted: ErrorModel =
+    ErrorModel(
+      MatchNotStarted,
+      "Requested match has not been started yet"
+    )
+
+  def notInMatch(playerId: String): ErrorModel =
+    ErrorModel(
+      NotInMatch,
+      s"Player with ID $playerId does not participate in any match"
+    )
+
+  val missingOpponent: ErrorModel =
+    ErrorModel(
+      MissingOpponent,
+      "Opponent participating in the requested match is missing"
+    )
+
   def unknownPlayer(playerId: String): ErrorModel =
     ErrorModel(
       UnknownPlayer,
