@@ -20,12 +20,12 @@ object EncoderFlow {
     Flow[ClientCommand]
       .map(encoder.encode(_).toTry.get)
       .map(scodecBytes => ByteString(scodecBytes.toByteArray))
-      .logDebug("Outgoing raw bytes", _.toHexString)
+      .debugLog("Outgoing raw bytes", _.toHexString)
       .via(
         Framing
           .simpleFramingProtocolEncoder(protocolConfig.`max-message-length`)
       )
-      .logDebug("Outgoing frames", _.toHexString)
+      .debugLog("Outgoing frames", _.toHexString)
   }
 
   private val encoder = ClientCommandCodec.encoder

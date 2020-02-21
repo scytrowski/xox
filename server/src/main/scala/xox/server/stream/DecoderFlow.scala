@@ -20,15 +20,15 @@ object DecoderFlow {
   )(implicit system: ActorSystem): Flow[ByteString, ServerCommand, NotUsed] = {
     implicit val adapter: LoggingAdapter = system.log
     Flow[ByteString]
-      .logDebug("Incoming raw bytes", _.toHexString)
+      .debugLog("Incoming raw bytes", _.toHexString)
       .via(
         Framing
           .simpleFramingProtocolDecoder(protocolConfig.`max-message-length`)
       )
-      .logDebug("Incoming frames", _.toHexString)
+      .debugLog("Incoming frames", _.toHexString)
       .map(akkaBytes => BitVector(akkaBytes.toArray))
       .mapConcat(bytes => decoder.decode(bytes).toTry.get.value)
-      .logDebug("Decoded commands")
+      .debugLog("Decoded commands")
   }
 
   private val decoder = list(ServerCommandCodec.codec).asDecoder

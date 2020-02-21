@@ -1,8 +1,9 @@
 package xox.server.stream
 
-import akka.stream.Materializer
+import akka.event.LoggingAdapter
 import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+import akka.stream.{ActorAttributes, Materializer, Supervision}
 import akka.util.ByteString
 import xox.core.protocol.{ClientCommand, ServerCommand}
 import xox.server.net.{Client, IncomingCommand, OutgoingCommand}
@@ -10,6 +11,8 @@ import xox.server.net.{Client, IncomingCommand, OutgoingCommand}
 import scala.concurrent.Future
 
 object ServerGraph {
+  import xox.server.syntax.akka.stream._
+
   def apply(
       clientSource: Source[Client, Future[ServerBinding]],
       decoderFlow: Flow[ByteString, ServerCommand, _],
@@ -17,6 +20,8 @@ object ServerGraph {
       handlerFlow: Flow[IncomingCommand, OutgoingCommand, _],
       deliveryFlow: Flow[OutgoingCommand, OutgoingCommand, _]
   )(implicit mat: Materializer): RunnableGraph[Future[ServerBinding]] = {
+    implicit val adapter: LoggingAdapter = mat.system.log
+
     clientSource.toMat(Sink.foreach { client =>
       client.flow
         .join {
@@ -30,7 +35,11 @@ object ServerGraph {
             .via(handlerFlow)
             .via(delivery)
             .via(encoderFlow)
+            .logOnError(s"Client-${client.id}")
         }
+        .addAttributes(
+          ActorAttributes.supervisionStrategy(Supervision.resumingDecider)
+        )
         .run()
     })(Keep.left)
   }

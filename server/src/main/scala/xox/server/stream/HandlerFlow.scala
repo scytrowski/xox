@@ -19,10 +19,10 @@ object HandlerFlow {
   ): Flow[IncomingCommand, OutgoingCommand, NotUsed] = {
     implicit val adapter: LoggingAdapter = system.log
     Flow[IncomingCommand]
-      .logInfo("Incoming commands")
+      .infoLog("Incoming commands")
       .pureStatefulMapConcat(initialState) { (state, command) =>
         handler.handle(command).run(state).value
       }
-      .logInfo("Outgoing commands")
+      .infoLog("Outgoing commands")
   }
 }

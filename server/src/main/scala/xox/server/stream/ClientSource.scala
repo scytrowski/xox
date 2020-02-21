@@ -23,6 +23,7 @@ object ClientSource {
         val id = idGenerator.generate
         Client(id, connection.remoteAddress, connection.flow)
       }
-      .logInfo("Connecting clients")
+      .infoLog("Connecting clients")
+      .logOnError("Connecting clients")
   }
 }

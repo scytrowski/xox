@@ -19,6 +19,6 @@ object DeliveryFlow {
       .run()
     Flow
       .fromSinkAndSource(commandSink, commandSource)
-      .logDebug("Delivery")
+      .debugLog("Delivery")
   }
 }
