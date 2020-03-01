@@ -1,11 +1,11 @@
 package xox.server.handler
 
 import org.scalatest.{Inside, LoneElement, OptionValues}
+import xox.server.fixture.CommonSpec
 import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}
 import xox.core.protocol.ClientCommand.MatchCreated
 import xox.core.protocol.{ClientCommand, ServerCommand}
 import xox.server.ServerState._
-import xox.server.fixture.CommonSpec
 import xox.server.game.Player
 import xox.server.handler.Errors._
 import xox.server.mock.{TestIdGenerator, TestServerState}

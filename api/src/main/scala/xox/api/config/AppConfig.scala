@@ -1,11 +1,11 @@
-package xox.server.config
+package xox.api.config
 
 import com.typesafe.config.{Config, ConfigFactory}
-import io.circe.config.syntax._
 
 import scala.util.Try
+import io.circe.config.syntax._
 
-final case class AppConfig(server: ServerConfig, protocol: ProtocolConfig)
+final case class AppConfig(api: ApiConfig, server: ServerConfig)
 
 object AppConfig {
   import xox.core.config.ConfigDecoders._

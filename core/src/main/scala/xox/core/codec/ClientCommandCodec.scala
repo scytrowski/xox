@@ -1,4 +1,4 @@
-package xox.core.codecs
+package xox.core.codec
 
 import scodec.{Codec, Decoder, Encoder, Err}
 import xox.core.protocol.ClientCommand

@@ -1,4 +1,4 @@
-package xox.core.codecs
+package xox.core.codec
 
 import scodec.{Attempt, Codec, Err}
 import xox.core.game.{Mark, MatchInfo, MatchParameters, PlayerInfo}

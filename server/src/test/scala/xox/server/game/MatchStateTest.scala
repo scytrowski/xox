@@ -1,11 +1,11 @@
 package xox.server.game
 
 import xox.core.game.{Mark, MatchParameters}
-import xox.server.fixture.CommonSpec
 import xox.server.game.BoardLike.SetResult
 import xox.server.game.MatchState.PutMarkResult
 import xox.server.mock.TestBoardLike
 import org.scalatest.prop.TableDrivenPropertyChecks._
+import xox.server.fixture.CommonSpec
 
 class MatchStateTest extends CommonSpec {
   "MatchState" when {

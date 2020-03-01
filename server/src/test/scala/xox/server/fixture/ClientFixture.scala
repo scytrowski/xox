@@ -7,7 +7,7 @@ import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
 import scodec.bits.BitVector
 import scodec.codecs._
-import xox.core.codecs.{ClientCommandCodec, ServerCommandCodec}
+import xox.core.codec.{ClientCommandCodec, ServerCommandCodec}
 import xox.core.protocol.{ClientCommand, ServerCommand}
 
 import scala.concurrent.duration._

@@ -3,10 +3,10 @@ package xox.server.stream
 import akka.stream.scaladsl.{Sink, Source}
 import cats.data.State
 import org.scalatest.concurrent.ScalaFutures
+import xox.server.fixture.StreamSpec
 import xox.core.protocol.{ClientCommand, ServerCommand}
 import xox.server.mock.TestServerState
 import xox.server.ServerState
-import xox.server.fixture.StreamSpec
 import xox.server.handler.CommandHandler
 import xox.server.net.OutgoingCommand.{Broadcast, Private}
 import xox.server.net.{IncomingCommand, OutgoingCommand}

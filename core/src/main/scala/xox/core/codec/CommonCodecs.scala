@@ -1,4 +1,4 @@
-package xox.core.codecs
+package xox.core.codec
 
 import scodec.bits.BitVector
 import scodec.{Attempt, Codec, Decoder, Encoder, Err, SizeBound}

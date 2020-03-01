@@ -1,4 +1,4 @@
-package xox.server.stream
+package xox.core.stream
 
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -6,12 +6,11 @@ import org.scalatest.EitherValues
 import org.scalatest.concurrent.ScalaFutures
 import scodec.Encoder
 import scodec.bits.BitVector
-import xox.core.codecs.ServerCommandCodec
+import xox.core.codec.ServerCommandCodec
+import xox.core.fixture.StreamSpec
 import xox.core.game.MatchParameters
 import xox.core.protocol.ServerCommand
 import xox.core.protocol.ServerCommand.{CreateMatch, JoinMatch, Login}
-import xox.server.config.ProtocolConfig
-import xox.server.fixture.StreamSpec
 
 class DecoderFlowTest
     extends StreamSpec("DecoderFlowTest")
@@ -32,7 +31,9 @@ class DecoderFlowTest
       val bytes2 = encode(command4, command5)
 
       Source(List(bytes1, bytes2))
-        .via(DecoderFlow(ProtocolConfig(1024)))
+        .via(
+          DecoderFlow(ServerCommandCodec.decoder, FramingProtocol.simple(1024))
+        )
         .runWith(Sink.seq)
         .futureValue must contain theSameElementsInOrderAs List(
         command1,

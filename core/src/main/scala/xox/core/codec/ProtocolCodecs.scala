@@ -1,4 +1,4 @@
-package xox.core.codecs
+package xox.core.codec
 
 import xox.core.protocol.{ErrorCause, ErrorModel}
 import scodec.Codec
