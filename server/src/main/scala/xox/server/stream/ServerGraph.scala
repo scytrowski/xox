@@ -11,7 +11,7 @@ import xox.server.net.{Client, IncomingCommand, OutgoingCommand}
 import scala.concurrent.Future
 
 object ServerGraph {
-  import xox.server.syntax.akka.stream._
+  import xox.core.syntax.akka.stream._
 
   def apply(
       clientSource: Source[Client, Future[ServerBinding]],

@@ -5,10 +5,11 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.RunnableGraph
 import akka.stream.scaladsl.Tcp.ServerBinding
 import xox.core.codec.{ClientCommandCodec, ServerCommandCodec}
-import xox.core.stream.{DecoderFlow, EncoderFlow, FramingProtocol}
+import xox.core.stream.{DecoderFlow, DeliveryFlow, EncoderFlow, FramingProtocol}
 import xox.server.config.AppConfig
 import xox.server.game.MatchStateFactoryLive
 import xox.server.handler.CommandHandlerLive
+import xox.server.net.OutgoingCommand
 import xox.server.stream._
 import xox.server.util.IdGenerator
 
@@ -31,7 +32,7 @@ object ServerInitializer {
     val decoderFlow      = DecoderFlow(ServerCommandCodec.decoder, framing)
     val encoderFlow      = EncoderFlow(ClientCommandCodec.encoder, framing)
     val handlerFlow      = HandlerFlow(handler, state)
-    val deliveryFlow     = DeliveryFlow()
+    val deliveryFlow     = DeliveryFlow[OutgoingCommand]()
     ServerGraph(
       connectionSource,
       decoderFlow,

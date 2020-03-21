@@ -11,7 +11,7 @@ import xox.server.util.IdGenerator
 import scala.concurrent.Future
 
 object ClientSource {
-  import xox.server.syntax.akka.stream._
+  import xox.core.syntax.akka.stream._
 
   def apply(serverConfig: ServerConfig, idGenerator: IdGenerator)(
       implicit system: ActorSystem

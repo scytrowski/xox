@@ -9,7 +9,7 @@ import xox.server.handler.CommandHandler
 import xox.server.net.{IncomingCommand, OutgoingCommand}
 
 object HandlerFlow {
-  import xox.server.syntax.akka.stream._
+  import xox.core.syntax.akka.stream._
 
   def apply(
       handler: CommandHandler,

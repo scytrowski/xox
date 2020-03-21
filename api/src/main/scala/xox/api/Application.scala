@@ -12,6 +12,7 @@ object Application extends App {
 
   AppConfig.load() match {
     case Success(config) =>
+
     case Failure(error) =>
       system.log.error(error, "Unable to load configuration")
   }
